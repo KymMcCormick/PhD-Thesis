@@ -13,34 +13,31 @@ For fitting the Block-Marschack and the other inequalities, we need a function t
 offers several such packages, see section 'Quadratic Optimization' on: https://cran.r-project.org/view=Optimization
 Initially, we used the most popular package, quadprog (https://cran.r-project.org/package=quadprog) for this purpose. However, in some cases the function got stuck. Consequently, we tried other packages. Frr example, we observed good, albeit slow, results with Dykstra (https://cran.r-project.org/package=Dykstra). So all results reported here should replicate with Dykstra as well. We finally settled on quadprogpp which is a new and fast implementation of quadprog, which currently is only available from github: https://github.com/fnoorian/quadprogpp  It requires a C++ compiler (e.g., Rtools on Windows or Xtools on Mac) and can then be installed via devtools
 
-```{r}
+```{r Packages, include=FALSE,  results="hide"}
 
+library("psych", lib.loc="~/R/win-library/3.5")
 library("tidyverse", lib.loc="~/R/win-library/3.5")
 library("jsonlite", lib.loc="~/R/win-library/3.5")
-library("grDevices", lib.loc="C:/Program Files/R/R-3.5.3/library")
-library("graphics", lib.loc="C:/Program Files/R/R-3.5.3/library")
+
 if (!(require("devtools"))) install.packages("devtools")
 devtools::install_github("fnoorian/quadprogpp", force = TRUE)
 library("quadprogpp", lib.loc="~/R/win-library/3.5") ## for fitting Block-Marschak
 
 ```
 
-```{r}
-setwd("C:/Users/mccormick/GitHub/Kellen")
-data1 <- read.csv("b_m_data.csv")
-data2 <- read.csv("experiment2data.csv")
+```{r data wrangling, include=FALSE}
+setwd("C:/Users/mccormick/GitHub/PhD-Thesis")
+
+data1 <- read.csv("data/Block Marschak Experiment/b_m_data.csv")
+data2 <- read.csv("data/Block Marschak Experiment/experiment3data.csv")
 
 
-
-```
-
-```{r}
 din1 <- data1 %>%
-  select(Test_T1_lineupSize, Test_T1_originalIdentification, demographics_age, demographics_gender, demographics_country) %>%
+  select(uid,Test_T1_lineupSize, Test_T1_originalIdentification, demographics_age, demographics_gender, demographics_country) %>%
   filter(!is.na(Test_T1_lineupSize)& demographics_country == "USA")
 
 din2 <- data2 %>%
-  select(Rank_T1_lineupSize, Rank_T1_originalIdentification, demographics_age, demographics_gender, demographics_country,condition)%>%
+  select(uid,Rank_T1_lineupSize, Rank_T1_originalIdentification, demographics_age, demographics_gender, demographics_country,condition)%>%
   filter(!is.na(Rank_T1_lineupSize)& demographics_country == "USA" & condition %in% c("S_H_P","S_L_P")) %>%
   select(-condition) %>%
   rename(Test_T1_lineupSize = Rank_T1_lineupSize,
@@ -51,13 +48,13 @@ din <- rbind(din1,din2)
 ```
 
 
-### bannerCommenter::banner("Demographics")
-
 ##################################################################
 ##                         Demographics                         ##
 ##################################################################
-```{r}
-#length(unique(din$ID))
+```{r demographics}
+#length(unique(din$uid))
+
+describe(din$demographics_age)
 
 demo <- din %>% 
   select(demographics_age, demographics_gender, demographics_country)# %>% 
@@ -102,7 +99,7 @@ prop_vector
 ##################################################################
 
 ## inequality matrix ##
-```{r}
+```{r, include=FALSE}
 MM <- structure(c(2, 3, 4, 5, 6, 7, 8, 2, 3, 4, 5, 6, 7, 8, 3, 4, 5, 
 6, 7, 8, 4, 5, 6, 7, 8, 5, 6, 7, 8, 6, 7, 8, 7, 8, 8, 3, 4, 5, 
 6, 7, 8, -1, -1, -1, -1, -1, -1, -1, 1, 0, 0, 0, 0, 0, 0, -1, 
@@ -130,10 +127,10 @@ MM <- structure(c(2, 3, 4, 5, 6, 7, 8, 2, 3, 4, 5, 6, 7, 8, 3, 4, 5,
 0, 0, 0, 0, 0, 1), .Dim = c(48L, 9L), .Dimnames = list(NULL, 
     c("max", "2AFC", "3AFC", "4AFC", "5AFC", "6AFC", "7AFC", 
     "8AFC", "RHS")))
-#MM
+print.data.frame(MM)
+```
 
-#write.csv(MM, "C:/Users/User/GitHub/Kellen/MM.csv")
-
+```{r}
 getGsq <- function(Q,dd){
   ee <- c(rbind(Q, 1-Q))*sum(dd[1:2])
   # compute Gsq
@@ -141,14 +138,24 @@ getGsq <- function(Q,dd){
   return(Gsq)
 }
 
+#the following fits to something that I don't understand
+qpfit_BM   <- -1*QP.Solve(
+  G = diag(7), #n by n matrix appearing in the quadratic function to be minimized.
+  g0 = prop_vector, #vector on length n appearing in the quadratic function to be minimized.
+  CI = -1*t(MM[-c(42:48),-c(1,9)]), #n by m constraints matrix. 
+  ci0 = -1*MM[-c(42:48),9] #constraints constants, with size m. 
+  )
+qpfit_BM
 
-qpfit_BM   <- -1*QP.Solve(diag(7), prop_vector, 
-                          -1*t(MM[-c(42:48),-c(1,9)]), 
-                          -1*MM[-c(42:48),9])
-
-qpfit_BMML <- -1*QP.Solve(diag(7), prop_vector, 
-                          -1*t(MM[,-c(1,9)]), 
-                          -1*MM[,9])
+#the following fits to the full Block-Marschak inequalities
+qpfit_BMML <- -1*QP.Solve(
+  G = diag(7), 
+  g0 = prop_vector, 
+  CI = -1*t(MM[,-c(1,9)]), 
+  ci0 = -1*MM[,9]
+  )
+qpfit_BMML
+prop_vector
 
 ```
 ### yields rankings
@@ -156,7 +163,11 @@ qpfit_BMML <- -1*QP.Solve(diag(7), prop_vector,
 rnko <- c(choose(7,0:7) * 
             (c(MM[MM[,"max"] == 8,][-c(2),-c(1,9)]%*%qpfit_BMML) + 
                c(rep(0,7),1)))
+rnko
+
 rnkn <- (1-rnko)/7
+rnkn
+
 
 cumsum(rnkn)
 cumsum(rnko)
@@ -267,12 +278,10 @@ for(iii in 1:nsim){
   gfitdata_BM[iii] <- getGsq(g_qpfit,gdd)
   
 }
-```
 ## p-value ##
-```{r}
 mean(gfitdata_BM > fitdata_BM)
 ## [1] 0.98182
-
+describe(gfitdata_BM)
 ```
 
 ```{r}
@@ -294,25 +303,36 @@ for(iii in 1:nsim){
   gfitdata_BMML[iii] <- getGsq(g_qpfit,gdd)
   
 }
-```
 ## p-value ##
-```{r}
 mean(gfitdata_BMML > fitdata_BMML)
+
+
 # [1] 0.92689
 ```
 
 #################################################################
-##                   Figure for Experiment 1                   ##
+##                   Figure                                    ##
 #################################################################
 
 ```{r}
+library("grDevices", lib.loc="C:/Program Files/R/R-3.5.3/library")
+library("graphics", lib.loc="C:/Program Files/R/R-3.5.3/library")
+#dev.off()
 dd <- dvector
 
-pdf("Figure_E1.pdf", 8, 4.5)
-
 par(mfrow=c(1,2))
+h <- dd[seq(1,13,2)]
+size <- c(sum(dd[1:2]),  
+          sum(dd[3:4]), 
+          sum(dd[5:6]), 
+          sum(dd[7:8]), 
+          sum(dd[9:10]), 
+          sum(dd[11:12]),
+          sum(dd[13:14])
+          )
+tpc <- dd[seq(1,13,2)]/size
+#pdf("Figure_1.pdf", 8, 4.5)
 
-tpc <- dd[seq(1,13,2)]/sum(dd[1:2])
 par(pty="s")
 plot(2:8,tpc,pch=15,cex=1.5,xlim=c(1.5,8.5),ylim=c(0,1),
      xlab="Choice Set Size (m)", ylab="Proportion Correct",
@@ -333,9 +353,13 @@ points(2:8,c((qpfit_BMML)),pch=21,cex=1,bg="darkgray")
 legend(6, 0.9, legend=c("Data","BMI-ML"), 
        pch=c(15,21),col=rep("black",2), 
        pt.bg=c(NULL,"darkgray"), cex=1)
+dev.off()
 ```
-# ROC #
+#################################################################
+##                            ROC                              ##
+#################################################################
 ```{r}
+pdf("Figure_2.pdf", 8, 4.5)
 par(pty="s")
 plot(cumsum(rnkn),cumsum(rnko),typ="l",pch=16,xaxs="i",yaxs="i",
 xlab="False Alarms", ylab="Hits",cex.lab=1.3, main="Yes-No ROC",lwd=2,
