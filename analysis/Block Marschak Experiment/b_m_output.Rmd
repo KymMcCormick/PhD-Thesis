@@ -1,0 +1,351 @@
+---
+title: "R Notebook"
+output:
+  word_document: default
+  pdf_document: default
+  html_notebook: default
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+For fitting the Block-Marschack and the other inequalities, we need a function that solves quadratic equations with inequality constraints. R
+offers several such packages, see section 'Quadratic Optimization' on: https://cran.r-project.org/view=Optimization
+Initially, we used the most popular package, quadprog (https://cran.r-project.org/package=quadprog) for this purpose. However, in some cases the function got stuck. Consequently, we tried other packages. Frr example, we observed good, albeit slow, results with Dykstra (https://cran.r-project.org/package=Dykstra). So all results reported here should replicate with Dykstra as well. We finally settled on quadprogpp which is a new and fast implementation of quadprog, which currently is only available from github: https://github.com/fnoorian/quadprogpp  It requires a C++ compiler (e.g., Rtools on Windows or Xtools on Mac) and can then be installed via devtools
+
+```{r}
+
+library("tidyverse", lib.loc="~/R/win-library/3.5")
+library("jsonlite", lib.loc="~/R/win-library/3.5")
+library("grDevices", lib.loc="C:/Program Files/R/R-3.5.3/library")
+library("graphics", lib.loc="C:/Program Files/R/R-3.5.3/library")
+if (!(require("devtools"))) install.packages("devtools")
+devtools::install_github("fnoorian/quadprogpp", force = TRUE)
+library("quadprogpp", lib.loc="~/R/win-library/3.5") ## for fitting Block-Marschak
+
+```
+
+```{r}
+setwd("C:/Users/mccormick/GitHub/Kellen")
+data1 <- read.csv("b_m_data.csv")
+data2 <- read.csv("experiment2data.csv")
+
+
+
+```
+
+```{r}
+din1 <- data1 %>%
+  select(Test_T1_lineupSize, Test_T1_originalIdentification, demographics_age, demographics_gender, demographics_country) %>%
+  filter(!is.na(Test_T1_lineupSize)& demographics_country == "USA")
+
+din2 <- data2 %>%
+  select(Rank_T1_lineupSize, Rank_T1_originalIdentification, demographics_age, demographics_gender, demographics_country,condition)%>%
+  filter(!is.na(Rank_T1_lineupSize)& demographics_country == "USA" & condition %in% c("S_H_P","S_L_P")) %>%
+  select(-condition) %>%
+  rename(Test_T1_lineupSize = Rank_T1_lineupSize,
+         Test_T1_originalIdentification = Rank_T1_originalIdentification
+         )
+
+din <- rbind(din1,din2)
+```
+
+
+### bannerCommenter::banner("Demographics")
+
+##################################################################
+##                         Demographics                         ##
+##################################################################
+```{r}
+#length(unique(din$ID))
+
+demo <- din %>% 
+  select(demographics_age, demographics_gender, demographics_country)# %>% 
+
+demo %>% 
+  select(-demographics_age) %>%
+  map(~prop.table(table(.)))
+```
+##################################################################
+##                         Prepare Data                         ##
+##################################################################
+```{r}
+din$correct <- if_else(din$Test_T1_originalIdentification == "F68", 1, 0)
+din$n <- if_else(!is.na(din$Test_T1_originalIdentification) == "F68",1,0)
+
+
+dat <- din %>% 
+  group_by(Test_T1_lineupSize) %>%
+  summarise(correct = sum(correct),
+            n = n())
+
+dvector <- dat %>% 
+  group_by(Test_T1_lineupSize) %>%
+  summarise(corr = sum(correct),
+            incorrect = sum(n) - sum(correct)) %>% 
+  select(-Test_T1_lineupSize) %>% 
+  as.matrix() %>% 
+  t() %>% 
+  as.vector
+
+dvector
+
+prop_vector <- dat %>% 
+  group_by(Test_T1_lineupSize) %>% 
+  summarise(out = sum(correct)/sum(n)) %>% 
+  {.$out}
+
+prop_vector
+```
+##################################################################
+##                      Fit Block-Marschak                      ##
+##################################################################
+
+## inequality matrix ##
+```{r}
+MM <- structure(c(2, 3, 4, 5, 6, 7, 8, 2, 3, 4, 5, 6, 7, 8, 3, 4, 5, 
+6, 7, 8, 4, 5, 6, 7, 8, 5, 6, 7, 8, 6, 7, 8, 7, 8, 8, 3, 4, 5, 
+6, 7, 8, -1, -1, -1, -1, -1, -1, -1, 1, 0, 0, 0, 0, 0, 0, -1, 
+0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 
+1, 0, 0, 1, 0, 1, -2, -3, -4, -5, -6, -7, 0, 0, 0, 0, 0, -7, 
+14, 0, 1, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0, -1, 1, 0, 0, 0, 
+0, -2, 1, 0, 0, 0, -3, 1, 0, 0, -4, 1, 0, -5, 1, -6, 1, 3, 6, 
+10, 15, 21, 0, 0, 0, 0, -21, 63, -63, 0, 0, 1, 0, 0, 0, 0, 0, 
+0, -1, 0, 0, 0, 0, 0, -1, 1, 0, 0, 0, 1, -2, 1, 0, 0, 3, -3, 
+1, 0, 6, -4, 1, 10, -5, 15, 0, -1, -4, -10, -20, -35, 0, 0, 0, 
+-35, 140, -210, 140, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, -1, 0, 0, 
+0, 0, 0, -1, 1, 0, 0, 0, 1, -2, 1, 0, -1, 3, -3, 1, -4, 6, -4, 
+-10, 10, -20, 0, 0, 1, 5, 15, 35, 0, 0, -35, 175, -350, 350, 
+-175, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0, -1, 
+1, 0, 0, 0, 1, -2, 1, 0, -1, 3, -3, 1, -4, 6, 5, -10, 15, 0, 
+0, 0, -1, -6, -21, 0, -21, 126, -315, 420, -315, 126, 0, 0, 0, 
+0, 0, 1, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0, 0, -1, 1, 0, 0, 0, 
+1, -2, 0, 0, -1, 3, 0, 1, -4, -1, 5, -6, 0, 0, 0, 0, 1, 7, -7, 
+49, -147, 245, -245, 147, -49, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 
+0, 0, 0, -1, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1, 0, 0, 0, -1, 0, 
+0, 1, 0, -1, 1, 0, 0, 0, 0, 0, -1, 8, -28, 56, -70, 56, -28, 
+8, 0.5, 0.333333333333333, 0.25, 0.2, 0.166666666666667, 0.142857142857143, 
+0.125, -1, -1, -1, -1, -1, -1, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, -1, -1, -1, -1, -1, 0, 
+0, 0, 0, 0, 0, 1), .Dim = c(48L, 9L), .Dimnames = list(NULL, 
+    c("max", "2AFC", "3AFC", "4AFC", "5AFC", "6AFC", "7AFC", 
+    "8AFC", "RHS")))
+#MM
+
+#write.csv(MM, "C:/Users/User/GitHub/Kellen/MM.csv")
+
+getGsq <- function(Q,dd){
+  ee <- c(rbind(Q, 1-Q))*sum(dd[1:2])
+  # compute Gsq
+  Gsq <- 2*sum(dd[dd!=0]*(log(dd[dd!=0])-log(ee[dd!=0])))
+  return(Gsq)
+}
+
+
+qpfit_BM   <- -1*QP.Solve(diag(7), prop_vector, 
+                          -1*t(MM[-c(42:48),-c(1,9)]), 
+                          -1*MM[-c(42:48),9])
+
+qpfit_BMML <- -1*QP.Solve(diag(7), prop_vector, 
+                          -1*t(MM[,-c(1,9)]), 
+                          -1*MM[,9])
+
+```
+### yields rankings
+```{r}
+rnko <- c(choose(7,0:7) * 
+            (c(MM[MM[,"max"] == 8,][-c(2),-c(1,9)]%*%qpfit_BMML) + 
+               c(rep(0,7),1)))
+rnkn <- (1-rnko)/7
+
+cumsum(rnkn)
+cumsum(rnko)
+```
+## G-square:
+# Block- Marschak
+```{r}
+fitdata_BM <- getGsq(qpfit_BM, dvector)
+fitdata_BM
+```
+# Block-Marschak with monotonic likelihood
+```{r}
+fitdata_BMML <- getGsq(qpfit_BMML, dvector)
+fitdata_BMML
+
+```
+### multiplicative inequalities (note ** = ^)
+```{r}
+epc <- c(1,qpfit_BMML)
+
+all(c(
+epc[3] > epc[2]**2  ,        # 2 > 1+1
+epc[4] > epc[2]**3   ,       # 3 > 1+1+1
+epc[4] > epc[2]*epc[3] ,      # 3 > 1+2
+epc[5] > epc[2]**4     ,     # 4 > 1+1+1+1
+epc[5] > epc[3]*epc[2]**2  ,  # 4 > 2+1+1
+epc[5] > epc[3]**2     ,     # 4 > 2+2
+epc[5] > epc[4]*epc[2] ,      # 4 > 3+1
+epc[6] > epc[2]**5     ,     # 5 > 1+1+1+1+1
+epc[6] > epc[2]**3*epc[3] ,   # 5 > 2+1+1+1
+epc[6] > epc[3]**2*epc[2],    # 5 > 2+2+1
+epc[6] > epc[4]*epc[2]**2 ,   # 5 > 3+1+1
+epc[6] > epc[4]*epc[3] ,      # 5 > 3+2
+epc[6] > epc[5]*epc[2] ,      # 5 > 4+1
+epc[7] > epc[2]**6   ,       # 6 > 1+1+1+1+1+1
+epc[7] > epc[3]*epc[2]**4 ,   # 6 > 2+1+1+1+1
+epc[7] > epc[3]**2*epc[2]**2, # 6 > 2+2+1+1
+epc[7] > epc[3]**3   ,       # 6 > 2+2+2
+epc[7] > epc[4]*epc[2]**3 ,   # 6 > 3+1+1+1
+epc[7] > epc[4]*epc[3]*epc[2], # 6 > 3+2+1
+epc[7] > epc[4]**2    ,      # 6 > 3+3
+epc[7] > epc[5]*epc[2]**2 ,   # 6 > 4+1+1
+epc[7] > epc[5]*epc[3] ,      # 6 > 4+2
+epc[7] > epc[6]*epc[2]  ,     # 6 > 5+1
+epc[8] > epc[2]**7  ,               # 7 > 1+1+1+1+1+1+1
+epc[8] > epc[3]*epc[2]**5 ,          # 7 > 2+1+1+1+1+1
+epc[8] > epc[3]**2*epc[2]**3 ,       # 7 > 2+2+1+1+1
+epc[8] > epc[3]**3*epc[2]  ,         # 7 > 2+2+2+1
+epc[8] > epc[4]*epc[2]**4  ,         # 7 > 3+1+1+1+1
+epc[8] > epc[4]*epc[3]*epc[2]**2 ,    # 7 > 3+2+1+1
+epc[8] > epc[4]*epc[3]**2,           # 7 > 3+2+2
+epc[8] > epc[4]**2*epc[2] ,          # 7 > 3+3+1
+epc[8] > epc[5]*epc[2]**3,           # 7 > 4+1+1+1
+epc[8] > epc[5]*epc[3]*epc[2] ,       # 7 > 4+2+1
+epc[8] > epc[5]*epc[4] ,             # 7 > 4+3
+epc[8] > epc[6]*epc[2]**2 ,          # 7 > 5+1+1
+epc[8] > epc[6]*epc[3] ,             # 7 > 5+2
+epc[8] > epc[7]*epc[2]               # 7 > 6+1
+))
+
+## Therefore, G-Square equal to 0, p-value equal to 1.
+
+
+```
+
+##---------------------------------------------------------------
+##                    get bootstrap p-value                     -
+##---------------------------------------------------------------
+```{r}
+
+nsim     <- 100000
+gfitdata_BM   <- vector("numeric", nsim)
+gfitdata_BMML <- vector("numeric", nsim)
+
+get_np_sample <- function(dvec) {
+  out <- vector("numeric", length(dvec))
+  for (i in seq_len(length(dvec)/2)) {
+    sel <- (i-1)*2 + (1:2)
+    out[sel] <- rmultinom(1, sum(dvec[sel]), dvec[sel]/sum(dvec[sel]) )[,1]
+  }
+  out
+}
+
+get_p_sample <- function(dvec, prob) {
+  out <- vector("numeric", length(dvec))
+  for (i in seq_len(length(dvec)/2)) {
+    sel <- (i-1)*2 + (1:2)
+    out[sel] <- rmultinom(1, sum(dvec[sel]), c(prob[i], 1-prob[i]) )[,1]
+  }
+  out
+}
+
+set.seed(666)
+for(iii in 1:nsim){
+
+  gdd <- get_np_sample(dvector)
+  
+  g_qpfit <- -1*QP.Solve(diag(7), gdd[seq(1,13,2)]/sum(dvector[1:2]), 
+                         -1*t(MM[-c(42:48),-c(1,9)]), -1*MM[-c(42:48),9])
+  
+  
+  gdd <- get_p_sample(dvector, g_qpfit)
+  
+   g_qpfit <- -1*QP.Solve(diag(7), gdd[seq(1,13,2)]/sum(dvector[1:2]), 
+                          -1*t(MM[-c(42:48),-c(1,9)]), -1*MM[-c(42:48),9]) 
+  
+  
+  gfitdata_BM[iii] <- getGsq(g_qpfit,gdd)
+  
+}
+```
+## p-value ##
+```{r}
+mean(gfitdata_BM > fitdata_BM)
+## [1] 0.98182
+
+```
+
+```{r}
+set.seed(999)
+for(iii in 1:nsim){
+
+  gdd <- get_np_sample(dvector)
+  
+  g_qpfit <- -1*QP.Solve(diag(7), gdd[seq(1,13,2)]/sum(dvector[1:2]), 
+                         -1*t(MM[,-c(1,9)]), -1*MM[,9])
+  
+  
+  gdd <- get_p_sample(dvector, g_qpfit)
+  
+   g_qpfit <- -1*QP.Solve(diag(7), gdd[seq(1,13,2)]/sum(dvector[1:2]), 
+                          -1*t(MM[,-c(1,9)]), -1*MM[,9]) 
+  
+  
+  gfitdata_BMML[iii] <- getGsq(g_qpfit,gdd)
+  
+}
+```
+## p-value ##
+```{r}
+mean(gfitdata_BMML > fitdata_BMML)
+# [1] 0.92689
+```
+
+#################################################################
+##                   Figure for Experiment 1                   ##
+#################################################################
+
+```{r}
+dd <- dvector
+
+pdf("Figure_E1.pdf", 8, 4.5)
+
+par(mfrow=c(1,2))
+
+tpc <- dd[seq(1,13,2)]/sum(dd[1:2])
+par(pty="s")
+plot(2:8,tpc,pch=15,cex=1.5,xlim=c(1.5,8.5),ylim=c(0,1),
+     xlab="Choice Set Size (m)", ylab="Proportion Correct",
+     cex.lab=1.3, main="m-AFC Performance",xaxs="i",yaxs="i")
+
+cil <- tpc - 1.96*sqrt((tpc*(1-tpc))/sum(dd[1:2]))
+ciu <- tpc + 1.96*sqrt((tpc*(1-tpc))/sum(dd[1:2]))
+
+for(ii in 1:7) segments(ii+1,ciu[ii],ii+1,cil[ii])
+
+polygon(rep(seq(1.5,8.5,1),each=2),c(0,rep(1/(2:8),each=2),0),
+        col="lightgray",border = FALSE)
+lines(rep(seq(1.5,8.5,1),each=2),c(0,rep(1/(2:8),each=2),0),lty=2)
+box()
+points(2:8,c((qpfit_BMML)),pch=21,cex=1,bg="darkgray")
+
+
+legend(6, 0.9, legend=c("Data","BMI-ML"), 
+       pch=c(15,21),col=rep("black",2), 
+       pt.bg=c(NULL,"darkgray"), cex=1)
+```
+# ROC #
+```{r}
+par(pty="s")
+plot(cumsum(rnkn),cumsum(rnko),typ="l",pch=16,xaxs="i",yaxs="i",
+xlab="False Alarms", ylab="Hits",cex.lab=1.3, main="Yes-No ROC",lwd=2,
+xlim=c(0,1), ylim=c(0,1),cex=1.3)
+points(cumsum(rnkn),cumsum(rnko),pch=21,bg="darkgray",cex=1.3)
+polygon(c(0,1,1),c(0,0,1),col="lightgray",border = FALSE)
+abline(0,1,lty=2)
+segments(0,1,0.5,0.5,lty=2)
+box()
+
+#dev.off()
+```
+
