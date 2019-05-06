@@ -1,0 +1,154 @@
+---
+title: "Fitting the m-AFC eyewitness data to UV-SDT model"
+author: "Kym McCormick"
+date: "16 April 2019"
+output:
+  word_document: default
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+
+
+```
+
+```{r, include=FALSE}
+library("plyr", lib.loc="~/R/win-library/3.5")
+library("dplyr", lib.loc="~/R/win-library/3.5")
+library("nnet", lib.loc="~/R/win-library/3.5")
+library("MPTinR", lib.loc="~/R/win-library/3.5")
+library("psych", lib.loc="~/R/win-library/3.5")
+#library("tseries", lib.loc="~/R/win-library/3.5")
+library("DescTools", lib.loc="~/R/win-library/3.5")
+```
+
+Forced choice accuracy is given by 
+
+   $P_C^{\langle k \rangle} = \int_{-\infty}^{\infty} g(x)F(x)^{n-1}dx$.
+    
+
+
+Step one is to find the best fitting UV-SDT model parameters to the empirical data. I adaped the following code from Kellen Supplemental script (2015)
+
+```{r}
+#Empirical data for lineup size k = {2,3,...,7,8}
+
+BMIDataCID <- c(0.8862,	0.7616,	0.6737,	0.6491,	0.5606,	0.5498, 0.50276)
+
+data_kafc <- c(rbind(BMIDataCID,1-BMIDataCID))*300
+
+SDT_kafc <- function(Q, data, param.names, n.params, tmp.env, lower.bound, upper.bound){
+   
+    e<-vector(
+      mode = "numeric",
+      length = 4
+      )
+
+    mu <- Q[1]
+    ss <- Q[2]
+       
+    rank <- function(i,k,mu=1,ss=1){
+            f1 <- function(x,i,k,mu,ss) {
+              choose(k -1, i-1)*dnorm(x,mu,ss)*pnorm(x)**(k-i)*(1-pnorm(x))**(i-1)    
+              }        
+            tmp <- vector(
+              mode = "numeric",
+              length = length(i)
+              )
+            for(ii in 1:length(i)) 
+              tmp[ii] <- integrate(
+                f = f1,
+                lower = -Inf, 
+                upper = Inf, 
+                i = i[ii],
+                k = k,
+                mu = mu,
+                ss = ss
+                ) $value
+            return(tmp)
+    }
+ 
+
+    e[1:2]  <- rank(1:2,2,mu=mu,ss=ss)    
+    e[3:4]  <- c(rank(1,3,mu=mu,ss=ss), 1- rank(1,3,mu=mu,ss=ss))
+    e[5:6]  <- c(rank(1,4,mu=mu,ss=ss), 1- rank(1,4,mu=mu,ss=ss) )
+    e[7:8]  <- c(rank(1,5,mu=mu,ss=ss), 1- rank(1,5,mu=mu,ss=ss))
+    e[9:10] <- c(rank(1,6,mu=mu,ss=ss), 1- rank(1,6,mu=mu,ss=ss) )
+    e[11:12] <- c(rank(1,7,mu=mu,ss=ss), 1- rank(1,7,mu=mu,ss=ss) )
+    e[13:14] <- c(rank(1,8,mu=mu,ss=ss), 1- rank(1,8,mu=mu,ss=ss) ) 
+    #add this last line if you have k=8 kAFC data
+
+    
+    LL <- -sum(data[data!=0]*log(e[data!=0]))
+    return(LL)
+}
+
+
+fit_kafc <- fit.mptinr(
+  data = data_kafc, 
+  objective = SDT_kafc, 
+  param.names = c("mu", "sigma"), 
+  categories.per.type = c(2,2,2,2,2,2,2), 
+  lower.bound = c(0,0.1), 
+  upper.bound = Inf, 
+  n.optim = 5,
+  show.messages = FALSE
+  )
+
+fit_kafc
+```
+
+Below is the code to simulate CIDs from the best fitting UV-SDT model parameters
+
+```{r}
+mu=1.3318149
+ss=0.6336813
+simulated <- vector("numeric")
+rank <- function(i,k,mu=1.3318149,ss=0.6336813){
+            f1 <- function(x,i,k,mu,ss) {
+              choose(k -1, i-1)*dnorm(x,mu,ss)*pnorm(x)**(k-i)*(1-pnorm(x))**(i-1)    
+              }        
+            tmp <- vector(
+              mode = "numeric",
+              length = length(i)
+              )
+            for(ii in 1:length(i)) 
+              tmp[ii] <- integrate(
+                f = f1,
+                lower = -Inf, 
+                upper = Inf, 
+                i = i[ii],
+                k = k,
+                mu = mu,
+                ss = ss
+                ) $value
+            return(tmp)
+}
+
+simulated[1]  <- rank(1,2,mu=mu,ss=ss)    
+simulated[2]  <- rank(1,3,mu=mu,ss=ss)
+simulated[3]  <- rank(1,4,mu=mu,ss=ss)
+simulated[4]  <- rank(1,5,mu=mu,ss=ss)
+simulated[5] <- rank(1,6,mu=mu,ss=ss)
+simulated[6] <- rank(1,7,mu=mu,ss=ss)
+simulated[7] <- rank(1,7,mu=mu,ss=ss)
+simulated
+```
+
+I realised then that I need to add in a G squared test of some sort (not sure if it is correct). I don't really understand how this differs from the loglikelihood test used in the fitting....
+
+```{r}
+sim_kafc <- c(rbind(simulated,1-simulated))*300
+matriz <- cbind(sim_kafc,data_kafc)
+matriz
+GTest(matriz)
+```
+
+
+
+
+

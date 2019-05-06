@@ -1,0 +1,492 @@
+\documentclass[]{article}
+\usepackage{lmodern}
+\usepackage{amssymb,amsmath}
+\usepackage{ifxetex,ifluatex}
+\usepackage{fixltx2e} % provides \textsubscript
+\ifnum 0\ifxetex 1\fi\ifluatex 1\fi=0 % if pdftex
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+\else % if luatex or xelatex
+  \ifxetex
+    \usepackage{mathspec}
+  \else
+    \usepackage{fontspec}
+  \fi
+  \defaultfontfeatures{Ligatures=TeX,Scale=MatchLowercase}
+\fi
+% use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+% use microtype if available
+\IfFileExists{microtype.sty}{%
+\usepackage{microtype}
+\UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\usepackage[margin=1in]{geometry}
+\usepackage{hyperref}
+\hypersetup{unicode=true,
+            pdftitle={Fitting the m-AFC eyewitness data to UV-SDT model},
+            pdfauthor={Kym McCormick},
+            pdfborder={0 0 0},
+            breaklinks=true}
+\urlstyle{same}  % don't use monospace font for urls
+\usepackage{color}
+\usepackage{fancyvrb}
+\newcommand{\VerbBar}{|}
+\newcommand{\VERB}{\Verb[commandchars=\\\{\}]}
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
+% Add ',fontsize=\small' for more characters per line
+\usepackage{framed}
+\definecolor{shadecolor}{RGB}{248,248,248}
+\newenvironment{Shaded}{\begin{snugshade}}{\end{snugshade}}
+\newcommand{\KeywordTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\DataTypeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{#1}}
+\newcommand{\DecValTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\BaseNTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\FloatTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\ConstantTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\CharTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\SpecialCharTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\StringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\SpecialStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\ImportTok}[1]{#1}
+\newcommand{\CommentTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\DocumentationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\AnnotationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\CommentVarTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\OtherTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{#1}}
+\newcommand{\FunctionTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\VariableTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\ControlFlowTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\OperatorTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{\textbf{#1}}}
+\newcommand{\BuiltInTok}[1]{#1}
+\newcommand{\ExtensionTok}[1]{#1}
+\newcommand{\PreprocessorTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\AttributeTok}[1]{\textcolor[rgb]{0.77,0.63,0.00}{#1}}
+\newcommand{\RegionMarkerTok}[1]{#1}
+\newcommand{\InformationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\WarningTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\AlertTok}[1]{\textcolor[rgb]{0.94,0.16,0.16}{#1}}
+\newcommand{\ErrorTok}[1]{\textcolor[rgb]{0.64,0.00,0.00}{\textbf{#1}}}
+\newcommand{\NormalTok}[1]{#1}
+\usepackage{graphicx,grffile}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+\IfFileExists{parskip.sty}{%
+\usepackage{parskip}
+}{% else
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt plus 2pt minus 1pt}
+}
+\setlength{\emergencystretch}{3em}  % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{0}
+% Redefines (sub)paragraphs to behave more like sections
+\ifx\paragraph\undefined\else
+\let\oldparagraph\paragraph
+\renewcommand{\paragraph}[1]{\oldparagraph{#1}\mbox{}}
+\fi
+\ifx\subparagraph\undefined\else
+\let\oldsubparagraph\subparagraph
+\renewcommand{\subparagraph}[1]{\oldsubparagraph{#1}\mbox{}}
+\fi
+
+%%% Use protect on footnotes to avoid problems with footnotes in titles
+\let\rmarkdownfootnote\footnote%
+\def\footnote{\protect\rmarkdownfootnote}
+
+%%% Change title format to be more compact
+\usepackage{titling}
+
+% Create subtitle command for use in maketitle
+\providecommand{\subtitle}[1]{
+  \posttitle{
+    \begin{center}\large#1\end{center}
+    }
+}
+
+\setlength{\droptitle}{-2em}
+
+  \title{Fitting the m-AFC eyewitness data to UV-SDT model}
+    \pretitle{\vspace{\droptitle}\centering\huge}
+  \posttitle{\par}
+    \author{Kym McCormick}
+    \preauthor{\centering\large\emph}
+  \postauthor{\par}
+      \predate{\centering\large\emph}
+  \postdate{\par}
+    \date{16 April 2019}
+
+
+\begin{document}
+\maketitle
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{library}\NormalTok{(}\StringTok{"plyr"}\NormalTok{, }\DataTypeTok{lib.loc=}\StringTok{"~/R/win-library/3.5"}\NormalTok{)}
+\KeywordTok{library}\NormalTok{(}\StringTok{"dplyr"}\NormalTok{, }\DataTypeTok{lib.loc=}\StringTok{"~/R/win-library/3.5"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Warning: package 'dplyr' was built under R version 3.5.3
+\end{verbatim}
+
+\begin{verbatim}
+## 
+## Attaching package: 'dplyr'
+\end{verbatim}
+
+\begin{verbatim}
+## The following objects are masked from 'package:plyr':
+## 
+##     arrange, count, desc, failwith, id, mutate, rename, summarise,
+##     summarize
+\end{verbatim}
+
+\begin{verbatim}
+## The following objects are masked from 'package:stats':
+## 
+##     filter, lag
+\end{verbatim}
+
+\begin{verbatim}
+## The following objects are masked from 'package:base':
+## 
+##     intersect, setdiff, setequal, union
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{library}\NormalTok{(}\StringTok{"nnet"}\NormalTok{, }\DataTypeTok{lib.loc=}\StringTok{"~/R/win-library/3.5"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Warning: package 'nnet' was built under R version 3.5.3
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{library}\NormalTok{(}\StringTok{"MPTinR"}\NormalTok{, }\DataTypeTok{lib.loc=}\StringTok{"~/R/win-library/3.5"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Warning: package 'MPTinR' was built under R version 3.5.3
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{library}\NormalTok{(}\StringTok{"psych"}\NormalTok{, }\DataTypeTok{lib.loc=}\StringTok{"~/R/win-library/3.5"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Warning: package 'psych' was built under R version 3.5.3
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{#library("tseries", lib.loc="~/R/win-library/3.5")}
+\KeywordTok{library}\NormalTok{(}\StringTok{"DescTools"}\NormalTok{, }\DataTypeTok{lib.loc=}\StringTok{"~/R/win-library/3.5"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Warning: package 'DescTools' was built under R version 3.5.3
+\end{verbatim}
+
+\begin{verbatim}
+## 
+## Attaching package: 'DescTools'
+\end{verbatim}
+
+\begin{verbatim}
+## The following objects are masked from 'package:psych':
+## 
+##     AUC, ICC, SD
+\end{verbatim}
+
+Forced choice accuracy is given by
+
+\(P_C^{\langle k \rangle} = \int_{-\infty}^{\infty} g(x)F(x)^{n-1}dx\).
+
+Step one is to find the best fitting UV-SDT model parameters to the
+empirical data. I adaped the following code from Kellen Supplemental
+script (2015)
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{#Empirical data for lineup size k = \{2,3,...,7,8\}}
+
+\NormalTok{BMIDataCID <-}\StringTok{ }\KeywordTok{c}\NormalTok{(}\FloatTok{0.8862}\NormalTok{, }\FloatTok{0.7616}\NormalTok{, }\FloatTok{0.6737}\NormalTok{, }\FloatTok{0.6491}\NormalTok{, }\FloatTok{0.5606}\NormalTok{, }\FloatTok{0.5498}\NormalTok{, }\FloatTok{0.50276}\NormalTok{)}
+
+\NormalTok{data_kafc <-}\StringTok{ }\KeywordTok{c}\NormalTok{(}\KeywordTok{rbind}\NormalTok{(BMIDataCID,}\DecValTok{1}\OperatorTok{-}\NormalTok{BMIDataCID))}\OperatorTok{*}\DecValTok{300}
+
+\NormalTok{SDT_kafc <-}\StringTok{ }\ControlFlowTok{function}\NormalTok{(Q, data, param.names, n.params, tmp.env, lower.bound, upper.bound)\{}
+   
+\NormalTok{    e<-}\KeywordTok{vector}\NormalTok{(}
+      \DataTypeTok{mode =} \StringTok{"numeric"}\NormalTok{,}
+      \DataTypeTok{length =} \DecValTok{4}
+\NormalTok{      )}
+
+\NormalTok{    mu <-}\StringTok{ }\NormalTok{Q[}\DecValTok{1}\NormalTok{]}
+\NormalTok{    ss <-}\StringTok{ }\NormalTok{Q[}\DecValTok{2}\NormalTok{]}
+       
+\NormalTok{    rank <-}\StringTok{ }\ControlFlowTok{function}\NormalTok{(i,k,}\DataTypeTok{mu=}\DecValTok{1}\NormalTok{,}\DataTypeTok{ss=}\DecValTok{1}\NormalTok{)\{}
+\NormalTok{            f1 <-}\StringTok{ }\ControlFlowTok{function}\NormalTok{(x,i,k,mu,ss) \{}
+              \KeywordTok{choose}\NormalTok{(k }\OperatorTok{-}\DecValTok{1}\NormalTok{, i}\OperatorTok{-}\DecValTok{1}\NormalTok{)}\OperatorTok{*}\KeywordTok{dnorm}\NormalTok{(x,mu,ss)}\OperatorTok{*}\KeywordTok{pnorm}\NormalTok{(x)}\OperatorTok{**}\NormalTok{(k}\OperatorTok{-}\NormalTok{i)}\OperatorTok{*}\NormalTok{(}\DecValTok{1}\OperatorTok{-}\KeywordTok{pnorm}\NormalTok{(x))}\OperatorTok{**}\NormalTok{(i}\OperatorTok{-}\DecValTok{1}\NormalTok{)    }
+\NormalTok{              \}        }
+\NormalTok{            tmp <-}\StringTok{ }\KeywordTok{vector}\NormalTok{(}
+              \DataTypeTok{mode =} \StringTok{"numeric"}\NormalTok{,}
+              \DataTypeTok{length =} \KeywordTok{length}\NormalTok{(i)}
+\NormalTok{              )}
+            \ControlFlowTok{for}\NormalTok{(ii }\ControlFlowTok{in} \DecValTok{1}\OperatorTok{:}\KeywordTok{length}\NormalTok{(i)) }
+\NormalTok{              tmp[ii] <-}\StringTok{ }\KeywordTok{integrate}\NormalTok{(}
+                \DataTypeTok{f =}\NormalTok{ f1,}
+                \DataTypeTok{lower =} \OperatorTok{-}\OtherTok{Inf}\NormalTok{, }
+                \DataTypeTok{upper =} \OtherTok{Inf}\NormalTok{, }
+                \DataTypeTok{i =}\NormalTok{ i[ii],}
+                \DataTypeTok{k =}\NormalTok{ k,}
+                \DataTypeTok{mu =}\NormalTok{ mu,}
+                \DataTypeTok{ss =}\NormalTok{ ss}
+\NormalTok{                ) }\OperatorTok{$}\NormalTok{value}
+            \KeywordTok{return}\NormalTok{(tmp)}
+\NormalTok{    \}}
+ 
+
+\NormalTok{    e[}\DecValTok{1}\OperatorTok{:}\DecValTok{2}\NormalTok{]  <-}\StringTok{ }\KeywordTok{rank}\NormalTok{(}\DecValTok{1}\OperatorTok{:}\DecValTok{2}\NormalTok{,}\DecValTok{2}\NormalTok{,}\DataTypeTok{mu=}\NormalTok{mu,}\DataTypeTok{ss=}\NormalTok{ss)    }
+\NormalTok{    e[}\DecValTok{3}\OperatorTok{:}\DecValTok{4}\NormalTok{]  <-}\StringTok{ }\KeywordTok{c}\NormalTok{(}\KeywordTok{rank}\NormalTok{(}\DecValTok{1}\NormalTok{,}\DecValTok{3}\NormalTok{,}\DataTypeTok{mu=}\NormalTok{mu,}\DataTypeTok{ss=}\NormalTok{ss), }\DecValTok{1}\OperatorTok{-}\StringTok{ }\KeywordTok{rank}\NormalTok{(}\DecValTok{1}\NormalTok{,}\DecValTok{3}\NormalTok{,}\DataTypeTok{mu=}\NormalTok{mu,}\DataTypeTok{ss=}\NormalTok{ss))}
+\NormalTok{    e[}\DecValTok{5}\OperatorTok{:}\DecValTok{6}\NormalTok{]  <-}\StringTok{ }\KeywordTok{c}\NormalTok{(}\KeywordTok{rank}\NormalTok{(}\DecValTok{1}\NormalTok{,}\DecValTok{4}\NormalTok{,}\DataTypeTok{mu=}\NormalTok{mu,}\DataTypeTok{ss=}\NormalTok{ss), }\DecValTok{1}\OperatorTok{-}\StringTok{ }\KeywordTok{rank}\NormalTok{(}\DecValTok{1}\NormalTok{,}\DecValTok{4}\NormalTok{,}\DataTypeTok{mu=}\NormalTok{mu,}\DataTypeTok{ss=}\NormalTok{ss) )}
+\NormalTok{    e[}\DecValTok{7}\OperatorTok{:}\DecValTok{8}\NormalTok{]  <-}\StringTok{ }\KeywordTok{c}\NormalTok{(}\KeywordTok{rank}\NormalTok{(}\DecValTok{1}\NormalTok{,}\DecValTok{5}\NormalTok{,}\DataTypeTok{mu=}\NormalTok{mu,}\DataTypeTok{ss=}\NormalTok{ss), }\DecValTok{1}\OperatorTok{-}\StringTok{ }\KeywordTok{rank}\NormalTok{(}\DecValTok{1}\NormalTok{,}\DecValTok{5}\NormalTok{,}\DataTypeTok{mu=}\NormalTok{mu,}\DataTypeTok{ss=}\NormalTok{ss))}
+\NormalTok{    e[}\DecValTok{9}\OperatorTok{:}\DecValTok{10}\NormalTok{] <-}\StringTok{ }\KeywordTok{c}\NormalTok{(}\KeywordTok{rank}\NormalTok{(}\DecValTok{1}\NormalTok{,}\DecValTok{6}\NormalTok{,}\DataTypeTok{mu=}\NormalTok{mu,}\DataTypeTok{ss=}\NormalTok{ss), }\DecValTok{1}\OperatorTok{-}\StringTok{ }\KeywordTok{rank}\NormalTok{(}\DecValTok{1}\NormalTok{,}\DecValTok{6}\NormalTok{,}\DataTypeTok{mu=}\NormalTok{mu,}\DataTypeTok{ss=}\NormalTok{ss) )}
+\NormalTok{    e[}\DecValTok{11}\OperatorTok{:}\DecValTok{12}\NormalTok{] <-}\StringTok{ }\KeywordTok{c}\NormalTok{(}\KeywordTok{rank}\NormalTok{(}\DecValTok{1}\NormalTok{,}\DecValTok{7}\NormalTok{,}\DataTypeTok{mu=}\NormalTok{mu,}\DataTypeTok{ss=}\NormalTok{ss), }\DecValTok{1}\OperatorTok{-}\StringTok{ }\KeywordTok{rank}\NormalTok{(}\DecValTok{1}\NormalTok{,}\DecValTok{7}\NormalTok{,}\DataTypeTok{mu=}\NormalTok{mu,}\DataTypeTok{ss=}\NormalTok{ss) )}
+\NormalTok{    e[}\DecValTok{13}\OperatorTok{:}\DecValTok{14}\NormalTok{] <-}\StringTok{ }\KeywordTok{c}\NormalTok{(}\KeywordTok{rank}\NormalTok{(}\DecValTok{1}\NormalTok{,}\DecValTok{8}\NormalTok{,}\DataTypeTok{mu=}\NormalTok{mu,}\DataTypeTok{ss=}\NormalTok{ss), }\DecValTok{1}\OperatorTok{-}\StringTok{ }\KeywordTok{rank}\NormalTok{(}\DecValTok{1}\NormalTok{,}\DecValTok{8}\NormalTok{,}\DataTypeTok{mu=}\NormalTok{mu,}\DataTypeTok{ss=}\NormalTok{ss) ) }
+    \CommentTok{#add this last line if you have k=8 kAFC data}
+
+    
+\NormalTok{    LL <-}\StringTok{ }\OperatorTok{-}\KeywordTok{sum}\NormalTok{(data[data}\OperatorTok{!=}\DecValTok{0}\NormalTok{]}\OperatorTok{*}\KeywordTok{log}\NormalTok{(e[data}\OperatorTok{!=}\DecValTok{0}\NormalTok{]))}
+    \KeywordTok{return}\NormalTok{(LL)}
+\NormalTok{\}}
+
+
+\NormalTok{fit_kafc <-}\StringTok{ }\KeywordTok{fit.mptinr}\NormalTok{(}
+  \DataTypeTok{data =}\NormalTok{ data_kafc, }
+  \DataTypeTok{objective =}\NormalTok{ SDT_kafc, }
+  \DataTypeTok{param.names =} \KeywordTok{c}\NormalTok{(}\StringTok{"mu"}\NormalTok{, }\StringTok{"sigma"}\NormalTok{), }
+  \DataTypeTok{categories.per.type =} \KeywordTok{c}\NormalTok{(}\DecValTok{2}\NormalTok{,}\DecValTok{2}\NormalTok{,}\DecValTok{2}\NormalTok{,}\DecValTok{2}\NormalTok{,}\DecValTok{2}\NormalTok{,}\DecValTok{2}\NormalTok{,}\DecValTok{2}\NormalTok{), }
+  \DataTypeTok{lower.bound =} \KeywordTok{c}\NormalTok{(}\DecValTok{0}\NormalTok{,}\FloatTok{0.1}\NormalTok{), }
+  \DataTypeTok{upper.bound =} \OtherTok{Inf}\NormalTok{, }
+  \DataTypeTok{n.optim =} \DecValTok{5}\NormalTok{,}
+  \DataTypeTok{show.messages =} \OtherTok{FALSE}
+\NormalTok{  )}
+
+\NormalTok{fit_kafc}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## $goodness.of.fit
+##   Log.Likelihood G.Squared df   p.value
+## 1      -1276.376  2.608118  5 0.7601314
+## 
+## $information.criteria
+##        AIC     BIC
+## 1 6.608118 17.9075
+## 
+## $model.info
+##   rank.fisher n.parameters n.independent.categories
+## 1           2            2                        7
+## 
+## $parameters
+##       estimates lower.conf upper.conf
+## mu    1.3318149  1.2426560  1.4209739
+## sigma 0.6336813  0.3190277  0.9483348
+## 
+## $data
+## $data$observed
+##        [,1]  [,2]   [,3]  [,4]   [,5]  [,6]   [,7]   [,8]   [,9]  [,10]
+## [1,] 265.86 34.14 228.48 71.52 202.11 97.89 194.73 105.27 168.18 131.82
+##       [,11]  [,12]   [,13]   [,14]
+## [1,] 164.94 135.06 150.828 149.172
+## 
+## $data$predicted
+## list()
+## 
+## 
+## $fitting.runs
+##           Min.   1st Qu.    Median      Mean   3rd Qu.      Max.
+## [1,] -1276.376 -1276.376 -1276.376 -1276.376 -1276.376 -1276.376
+\end{verbatim}
+
+Below is the code to simulate CIDs from the best fitting UV-SDT model
+parameters
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{mu=}\FloatTok{1.3093966}
+\NormalTok{ss=}\FloatTok{0.5939441}
+\NormalTok{simulated <-}\StringTok{ }\KeywordTok{vector}\NormalTok{(}\StringTok{"numeric"}\NormalTok{)}
+\NormalTok{rank <-}\StringTok{ }\ControlFlowTok{function}\NormalTok{(i,k,}\DataTypeTok{mu=}\FloatTok{1.3093966}\NormalTok{,}\DataTypeTok{ss=}\FloatTok{0.5939441}\NormalTok{)\{}
+\NormalTok{            f1 <-}\StringTok{ }\ControlFlowTok{function}\NormalTok{(x,i,k,mu,ss) \{}
+              \KeywordTok{choose}\NormalTok{(k }\OperatorTok{-}\DecValTok{1}\NormalTok{, i}\OperatorTok{-}\DecValTok{1}\NormalTok{)}\OperatorTok{*}\KeywordTok{dnorm}\NormalTok{(x,mu,ss)}\OperatorTok{*}\KeywordTok{pnorm}\NormalTok{(x)}\OperatorTok{**}\NormalTok{(k}\OperatorTok{-}\NormalTok{i)}\OperatorTok{*}\NormalTok{(}\DecValTok{1}\OperatorTok{-}\KeywordTok{pnorm}\NormalTok{(x))}\OperatorTok{**}\NormalTok{(i}\OperatorTok{-}\DecValTok{1}\NormalTok{)    }
+\NormalTok{              \}        }
+\NormalTok{            tmp <-}\StringTok{ }\KeywordTok{vector}\NormalTok{(}
+              \DataTypeTok{mode =} \StringTok{"numeric"}\NormalTok{,}
+              \DataTypeTok{length =} \KeywordTok{length}\NormalTok{(i)}
+\NormalTok{              )}
+            \ControlFlowTok{for}\NormalTok{(ii }\ControlFlowTok{in} \DecValTok{1}\OperatorTok{:}\KeywordTok{length}\NormalTok{(i)) }
+\NormalTok{              tmp[ii] <-}\StringTok{ }\KeywordTok{integrate}\NormalTok{(}
+                \DataTypeTok{f =}\NormalTok{ f1,}
+                \DataTypeTok{lower =} \OperatorTok{-}\OtherTok{Inf}\NormalTok{, }
+                \DataTypeTok{upper =} \OtherTok{Inf}\NormalTok{, }
+                \DataTypeTok{i =}\NormalTok{ i[ii],}
+                \DataTypeTok{k =}\NormalTok{ k,}
+                \DataTypeTok{mu =}\NormalTok{ mu,}
+                \DataTypeTok{ss =}\NormalTok{ ss}
+\NormalTok{                ) }\OperatorTok{$}\NormalTok{value}
+            \KeywordTok{return}\NormalTok{(tmp)}
+\NormalTok{\}}
+
+\NormalTok{simulated[}\DecValTok{1}\NormalTok{]  <-}\StringTok{ }\KeywordTok{rank}\NormalTok{(}\DecValTok{1}\NormalTok{,}\DecValTok{2}\NormalTok{,}\DataTypeTok{mu=}\NormalTok{mu,}\DataTypeTok{ss=}\NormalTok{ss)    }
+\NormalTok{simulated[}\DecValTok{2}\NormalTok{]  <-}\StringTok{ }\KeywordTok{rank}\NormalTok{(}\DecValTok{1}\NormalTok{,}\DecValTok{3}\NormalTok{,}\DataTypeTok{mu=}\NormalTok{mu,}\DataTypeTok{ss=}\NormalTok{ss)}
+\NormalTok{simulated[}\DecValTok{3}\NormalTok{]  <-}\StringTok{ }\KeywordTok{rank}\NormalTok{(}\DecValTok{1}\NormalTok{,}\DecValTok{4}\NormalTok{,}\DataTypeTok{mu=}\NormalTok{mu,}\DataTypeTok{ss=}\NormalTok{ss)}
+\NormalTok{simulated[}\DecValTok{4}\NormalTok{]  <-}\StringTok{ }\KeywordTok{rank}\NormalTok{(}\DecValTok{1}\NormalTok{,}\DecValTok{5}\NormalTok{,}\DataTypeTok{mu=}\NormalTok{mu,}\DataTypeTok{ss=}\NormalTok{ss)}
+\NormalTok{simulated[}\DecValTok{5}\NormalTok{] <-}\StringTok{ }\KeywordTok{rank}\NormalTok{(}\DecValTok{1}\NormalTok{,}\DecValTok{6}\NormalTok{,}\DataTypeTok{mu=}\NormalTok{mu,}\DataTypeTok{ss=}\NormalTok{ss)}
+\NormalTok{simulated[}\DecValTok{6}\NormalTok{] <-}\StringTok{ }\KeywordTok{rank}\NormalTok{(}\DecValTok{1}\NormalTok{,}\DecValTok{7}\NormalTok{,}\DataTypeTok{mu=}\NormalTok{mu,}\DataTypeTok{ss=}\NormalTok{ss)}
+\NormalTok{simulated[}\DecValTok{7}\NormalTok{] <-}\StringTok{ }\KeywordTok{rank}\NormalTok{(}\DecValTok{1}\NormalTok{,}\DecValTok{7}\NormalTok{,}\DataTypeTok{mu=}\NormalTok{mu,}\DataTypeTok{ss=}\NormalTok{ss)}
+\NormalTok{simulated}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 0.8698738 0.7703444 0.6913704 0.6269855 0.5733839 0.5280067 0.5280067
+\end{verbatim}
+
+I realised then that I need to add in a G squared test of some sort (not
+sure if it is correct). I don't really understand how this differs from
+the loglikelihood test used in the fitting\ldots{}.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{sim_kafc <-}\StringTok{ }\KeywordTok{c}\NormalTok{(}\KeywordTok{rbind}\NormalTok{(simulated,}\DecValTok{1}\OperatorTok{-}\NormalTok{simulated))}\OperatorTok{*}\DecValTok{300}
+\NormalTok{matriz <-}\StringTok{ }\KeywordTok{cbind}\NormalTok{(sim_kafc,data_kafc)}
+\NormalTok{matriz}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##        sim_kafc data_kafc
+##  [1,] 260.96215   265.860
+##  [2,]  39.03785    34.140
+##  [3,] 231.10333   228.480
+##  [4,]  68.89667    71.520
+##  [5,] 207.41113   202.110
+##  [6,]  92.58887    97.890
+##  [7,] 188.09566   194.730
+##  [8,] 111.90434   105.270
+##  [9,] 172.01518   168.180
+## [10,] 127.98482   131.820
+## [11,] 158.40202   164.940
+## [12,] 141.59798   135.060
+## [13,] 158.40202   150.828
+## [14,] 141.59798   149.172
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{GTest}\NormalTok{(matriz)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+##  Log likelihood ratio (G-test) test of independence without
+##  correction
+## 
+## data:  matriz
+## G = 1.7409, X-squared df = 13, p-value = 0.9999
+\end{verbatim}
+
+Next, I quickly wrote up some code to test the Block-Marschak
+Inequalities for the best fitting simulated CIDs and the empirical CIDs
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{BMI <-}\StringTok{ }\ControlFlowTok{function}\NormalTok{(e)\{}
+  
+\NormalTok{BMI1 <-}\StringTok{ }\KeywordTok{vector}\NormalTok{(}\StringTok{"numeric"}\NormalTok{)}
+\NormalTok{BMI2 <-}\StringTok{ }\KeywordTok{vector}\NormalTok{(}\StringTok{"numeric"}\NormalTok{)}
+\NormalTok{BMI3 <-}\StringTok{ }\KeywordTok{vector}\NormalTok{(}\StringTok{"numeric"}\NormalTok{)}
+\NormalTok{BMI4 <-}\StringTok{ }\KeywordTok{vector}\NormalTok{(}\StringTok{"numeric"}\NormalTok{)}
+\NormalTok{BMI5 <-}\StringTok{ }\KeywordTok{vector}\NormalTok{(}\StringTok{"numeric"}\NormalTok{)}
+\NormalTok{BMI6 <-}\StringTok{ }\KeywordTok{vector}\NormalTok{(}\StringTok{"numeric"}\NormalTok{)}
+
+\ControlFlowTok{for}\NormalTok{ (b }\ControlFlowTok{in} \DecValTok{1}\OperatorTok{:}\DecValTok{6}\NormalTok{) \{}
+\NormalTok{  BMI1[b] <-}\StringTok{ }\NormalTok{e[b]}\OperatorTok{-}\NormalTok{e[b}\OperatorTok{+}\DecValTok{1}\NormalTok{]}
+\NormalTok{\}}
+\ControlFlowTok{for}\NormalTok{ (b }\ControlFlowTok{in} \DecValTok{2}\OperatorTok{:}\DecValTok{6}\NormalTok{) \{}
+\NormalTok{  BMI2[b}\OperatorTok{-}\DecValTok{1}\NormalTok{] <-}\StringTok{ }\NormalTok{e[b}\OperatorTok{-}\DecValTok{1}\NormalTok{]}\OperatorTok{-}\DecValTok{2}\OperatorTok{*}\NormalTok{e[b]}\OperatorTok{+}\NormalTok{e[b}\OperatorTok{+}\DecValTok{1}\NormalTok{]}
+\NormalTok{\}}
+\ControlFlowTok{for}\NormalTok{ (b }\ControlFlowTok{in} \DecValTok{3}\OperatorTok{:}\DecValTok{6}\NormalTok{) \{}
+\NormalTok{  BMI3[b}\OperatorTok{-}\DecValTok{2}\NormalTok{] <-}\StringTok{ }\NormalTok{e[b}\OperatorTok{-}\DecValTok{2}\NormalTok{]}\OperatorTok{-}\DecValTok{3}\OperatorTok{*}\NormalTok{e[b}\OperatorTok{-}\DecValTok{1}\NormalTok{]}\OperatorTok{+}\DecValTok{3}\OperatorTok{*}\NormalTok{e[b]}\OperatorTok{-}\NormalTok{e[b}\OperatorTok{+}\DecValTok{1}\NormalTok{]}
+\NormalTok{\}}
+\ControlFlowTok{for}\NormalTok{ (b }\ControlFlowTok{in} \DecValTok{4}\OperatorTok{:}\DecValTok{6}\NormalTok{) \{}
+\NormalTok{  BMI4[b}\OperatorTok{-}\DecValTok{3}\NormalTok{] <-}\StringTok{ }\NormalTok{e[b}\OperatorTok{-}\DecValTok{3}\NormalTok{]}\OperatorTok{-}\DecValTok{4}\OperatorTok{*}\NormalTok{e[b}\OperatorTok{-}\DecValTok{2}\NormalTok{]}\OperatorTok{+}\DecValTok{6}\OperatorTok{*}\NormalTok{e[b}\OperatorTok{-}\DecValTok{1}\NormalTok{]}\OperatorTok{-}\DecValTok{4}\OperatorTok{*}\NormalTok{e[b]}\OperatorTok{+}\NormalTok{e[b}\OperatorTok{+}\DecValTok{1}\NormalTok{]}
+\NormalTok{\}}
+\ControlFlowTok{for}\NormalTok{ (b }\ControlFlowTok{in} \DecValTok{5}\OperatorTok{:}\DecValTok{6}\NormalTok{) \{}
+\NormalTok{  BMI5[b}\OperatorTok{-}\DecValTok{4}\NormalTok{] <-}\StringTok{ }\NormalTok{e[b}\OperatorTok{-}\DecValTok{4}\NormalTok{]}\OperatorTok{-}\DecValTok{5}\OperatorTok{*}\NormalTok{e[b}\OperatorTok{-}\DecValTok{3}\NormalTok{]}\OperatorTok{+}\DecValTok{10}\OperatorTok{*}\NormalTok{e[b}\OperatorTok{-}\DecValTok{2}\NormalTok{]}\OperatorTok{-}\DecValTok{10}\OperatorTok{*}\NormalTok{e[b}\OperatorTok{-}\DecValTok{1}\NormalTok{]}\OperatorTok{+}\DecValTok{5}\OperatorTok{*}\NormalTok{e[b]}\OperatorTok{-}\NormalTok{e[b}\OperatorTok{+}\DecValTok{1}\NormalTok{]}
+\NormalTok{\}}
+\ControlFlowTok{for}\NormalTok{ (b }\ControlFlowTok{in} \DecValTok{6}\NormalTok{) \{}
+\NormalTok{  BMI6[b}\OperatorTok{-}\DecValTok{5}\NormalTok{] <-}\StringTok{ }\NormalTok{e[b}\OperatorTok{-}\DecValTok{5}\NormalTok{]}\OperatorTok{-}\DecValTok{6}\OperatorTok{*}\NormalTok{e[b}\OperatorTok{-}\DecValTok{4}\NormalTok{]}\OperatorTok{+}\DecValTok{15}\OperatorTok{*}\NormalTok{e[b}\OperatorTok{-}\DecValTok{3}\NormalTok{]}\OperatorTok{-}\DecValTok{20}\OperatorTok{*}\NormalTok{e[b}\OperatorTok{-}\DecValTok{2}\NormalTok{]}\OperatorTok{+}\DecValTok{15}\OperatorTok{*}\NormalTok{e[b}\OperatorTok{-}\DecValTok{1}\NormalTok{]}\OperatorTok{-}\DecValTok{6}\OperatorTok{*}\NormalTok{e[b]}\OperatorTok{+}\NormalTok{e[b}\OperatorTok{+}\DecValTok{1}\NormalTok{]}
+\NormalTok{\}}
+\NormalTok{BMI <-}\StringTok{ }\KeywordTok{c}\NormalTok{(BMI1,BMI2,BMI3,BMI4,BMI5,BMI6)}
+\KeywordTok{return}\NormalTok{(BMI)}
+\NormalTok{\}}
+
+
+\NormalTok{BMI.simulated <-}\StringTok{ }\KeywordTok{BMI}\NormalTok{(}\KeywordTok{c}\NormalTok{(}\DecValTok{1}\NormalTok{,simulated))}
+
+\NormalTok{empirical <-}\StringTok{ }\KeywordTok{c}\NormalTok{(}\DecValTok{1}\NormalTok{,}\FloatTok{0.8866}\NormalTok{,    }\FloatTok{0.7564}\NormalTok{, }\FloatTok{0.6726}\NormalTok{, }\FloatTok{0.6494}\NormalTok{, }\FloatTok{0.5503}\NormalTok{, }\FloatTok{0.5446}\NormalTok{)}
+\CommentTok{# I've added in the CID for k = 1 so that we can calculate the full BMI}
+\NormalTok{BMI.empirical <-}\StringTok{ }\KeywordTok{BMI}\NormalTok{(empirical)}
+\NormalTok{BMI.comparison <-}\StringTok{ }\NormalTok{(}\KeywordTok{cbind}\NormalTok{(BMI.simulated,BMI.empirical))}
+\NormalTok{BMI.comparison}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##       BMI.simulated BMI.empirical
+##  [1,]   0.130126163        0.1134
+##  [2,]   0.099529404        0.1302
+##  [3,]   0.078973998        0.0838
+##  [4,]   0.064384907        0.0232
+##  [5,]   0.053601579        0.0991
+##  [6,]   0.045377216        0.0057
+##  [7,]   0.030596759       -0.0168
+##  [8,]   0.020555407        0.0464
+##  [9,]   0.014589091        0.0606
+## [10,]   0.010783328       -0.0759
+## [11,]   0.008224362        0.0934
+## [12,]   0.010041352       -0.0632
+## [13,]   0.005966316       -0.0142
+## [14,]   0.003805762        0.1365
+## [15,]   0.002558966       -0.1693
+## [16,]   0.004075036       -0.0490
+## [17,]   0.002160554       -0.1507
+## [18,]   0.001246797        0.3058
+## [19,]   0.001914483        0.1017
+## [20,]   0.000913757       -0.4565
+## [21,]   0.001000726        0.5582
+\end{verbatim}
+
+
+\end{document}
