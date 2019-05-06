@@ -1,19 +1,17 @@
 ---
-title: "R Notebook"
+title: "Testing eyewitness data against the Block-Marschak inequalities"
+author: "Kym McCormick"
+date: "3 May 2019"
 output:
   word_document: default
   pdf_document: default
   html_notebook: default
 ---
-```{r setup, include=FALSE}
+```{r setup, include=FALSE, results='hide'}
+
 knitr::opts_chunk$set(echo = TRUE)
-```
 
-For fitting the Block-Marschack and the other inequalities, we need a function that solves quadratic equations with inequality constraints. R
-offers several such packages, see section 'Quadratic Optimization' on: https://cran.r-project.org/view=Optimization
-Initially, we used the most popular package, quadprog (https://cran.r-project.org/package=quadprog) for this purpose. However, in some cases the function got stuck. Consequently, we tried other packages. Frr example, we observed good, albeit slow, results with Dykstra (https://cran.r-project.org/package=Dykstra). So all results reported here should replicate with Dykstra as well. We finally settled on quadprogpp which is a new and fast implementation of quadprog, which currently is only available from github: https://github.com/fnoorian/quadprogpp  It requires a C++ compiler (e.g., Rtools on Windows or Xtools on Mac) and can then be installed via devtools
-
-```{r Packages, include=FALSE,  results="hide"}
+#For fitting the Block-Marschack and the other inequalities, we need a function that solves quadratic equations with inequality constraints. R offers several such packages, see section 'Quadratic Optimization' on: https://cran.r-project.org/view=Optimization Initially, we used the most popular package, quadprog (https://cran.r-project.org/package=quadprog) for this purpose. However, in some cases the function got stuck. Consequently, we tried other packages. Frr example, we observed good, albeit slow, results with Dykstra (https://cran.r-project.org/package=Dykstra). So all results reported here should replicate with Dykstra as well. We finally settled on quadprogpp which is a new and fast implementation of quadprog, which currently is only available from github: https://github.com/fnoorian/quadprogpp  It requires a C++ compiler (e.g., Rtools on Windows or Xtools on Mac) and can then be installed via devtools.
 
 library("psych", lib.loc="~/R/win-library/3.5")
 library("tidyverse", lib.loc="~/R/win-library/3.5")
@@ -47,11 +45,8 @@ din2 <- data2 %>%
 din <- rbind(din1,din2)
 ```
 
-
-##################################################################
-##                         Demographics                         ##
-##################################################################
-```{r demographics}
+##Demographics                         ##
+```{r demographics, echo=FALSE}
 #length(unique(din$uid))
 
 describe(din$demographics_age)
@@ -63,11 +58,11 @@ demo %>%
   select(-demographics_age) %>%
   map(~prop.table(table(.)))
 ```
-##################################################################
-##                         Prepare Data                         ##
-##################################################################
+##m-AFC Data
 
-Create vector of CID FID counts for each lineup size. Note that each lineup size has a different number of observations.
+NB that each lineup size  (m = 2:8) has a different number of observations.
+
+Vector of correct and incorrect response counts for each lineup size. 
 
 ```{r,echo=FALSE}
 din$correct <- if_else(din$Test_T1_originalIdentification == "F68", 1, 0)
@@ -92,7 +87,7 @@ dvector
 
 
 ```
-Create vector of CID for each lineup size
+Vector of CIDs for each lineup size
 
 ```{r, echo=FALSE}
 prop_vector <- dat %>% 
@@ -103,11 +98,9 @@ prop_vector <- dat %>%
 prop_vector
 ```
 
-##################################################################
-##                      Fit Block-Marschak                      ##
-##################################################################
+##Fit Block-Marschak
 
-## inequality matrix ##
+### inequality matrix ##
 ```{r, echo=FALSE}
 MM <- structure(c(2, 3, 4, 5, 6, 7, 8, 2, 3, 4, 5, 6, 7, 8, 3, 4, 5, 
 6, 7, 8, 4, 5, 6, 7, 8, 5, 6, 7, 8, 6, 7, 8, 7, 8, 8, 3, 4, 5, 
@@ -139,7 +132,7 @@ MM <- structure(c(2, 3, 4, 5, 6, 7, 8, 2, 3, 4, 5, 6, 7, 8, 3, 4, 5,
 MM
 ```
 
-##Fitting to the Block Marschak inequalities
+###Fitting to the Block Marschak inequalities
 
 Closest fitting expected data that respect the Block-Marschak inequalities:
 ```{r, echo=FALSE}
@@ -154,7 +147,7 @@ qpfit_BM
 
 ```
 
-##Introduction of the monotonic likelihood constraint
+###Fitting to the Block-Marschak inequalities (with monotonic likelihood constraint applied)
 
 Closest fitting expected data that respect the Block-Marschak inequalities and the monotonic likelihood constraint:
 
@@ -170,9 +163,9 @@ qpfit_BMML
 ```
 
 
-## yields rankings
+### Yields rankings
 
-reconstructing the CID and FID(respectively) from the m-AFC data:
+reconstructing the CID and FID (respectively) from the m-AFC data:
 
 ```{r, echo=FALSE}
 
@@ -190,7 +183,7 @@ rnkn <- (1-rnko)/7
 cumsum(rnkn)
 
 ```
-## G-square:
+### G-square:
 ```{r, echo=FALSE}
 getGsq <- function(Q,dd){
   size <- c(sum(dvector[1:2]),
@@ -217,20 +210,20 @@ getGsq <- function(Q,dd){
 }
 ```
 
-# Block- Marschak
+#### Block- Marschak
 ```{r, echo=FALSE}
 fitdata_BM <- getGsq(qpfit_BM, dvector)
 fitdata_BM
 ```
 
 
-# Block-Marschak with monotonic likelihood
+#### Block-Marschak with monotonic likelihood
 ```{r, echo=FALSE}
 fitdata_BMML <- getGsq(qpfit_BMML, dvector)
 fitdata_BMML
 
 ```
-### multiplicative inequalities 
+### Multiplicative inequalities 
 ```{r, echo=FALSE}
 epc <- c(1,qpfit_BMML)
 
@@ -280,9 +273,10 @@ epc[8] > epc[7]*epc[2]               # 7 > 6+1
 ```
 Therefore, G-Square equal to 0, p-value equal to 1.
 
-##---------------------------------------------------------------
-##                    get bootstrap p-value                     -
-##---------------------------------------------------------------
+###Bootstrap p-value 
+
+Block-Marschak inequalities:
+
 ```{r, echo=FALSE}
 
 nsim     <- 100000
@@ -338,7 +332,10 @@ mean(gfitdata_BM > fitdata_BM)
 #describe(gfitdata_BM)
 ```
 
-```{r}
+
+Block-Marschak inequalities with monotonic likelihood constraint:
+
+```{r, echo=FALSE}
 set.seed(999)
 for(iii in 1:nsim){
   size <- c(sum(dvector[1:2]),  
@@ -371,17 +368,15 @@ mean(gfitdata_BMML > fitdata_BMML)
 # [1] 0.92689
 ```
 
-#################################################################
-##                   Figure                                    ##
-#################################################################
+##Figure 
 
-```{r}
+```{r, echo=FALSE}
 library("grDevices", lib.loc="C:/Program Files/R/R-3.5.3/library")
 library("graphics", lib.loc="C:/Program Files/R/R-3.5.3/library")
 #dev.off()
 dd <- dvector
 
-par(mfrow=c(1,2))
+#par(mfrow=c(1,2))
 h <- dd[seq(1,13,2)]
 size <- c(sum(dd[1:2]),  
           sum(dd[3:4]), 
@@ -416,10 +411,10 @@ legend(6, 0.9, legend=c("Data","BMI-ML"),
        pt.bg=c(NULL,"darkgray"), cex=1)
 #dev.off()
 ```
-#################################################################
-##                            ROC                              ##
-#################################################################
-```{r}
+
+
+##Reconstructed eyewitness identification ROC
+```{r, echo=FALSE}
 #pdf("Figure_2.pdf", 8, 4.5)
 par(pty="s")
 plot(cumsum(rnkn),cumsum(rnko),typ="l",pch=16,xaxs="i",yaxs="i",
