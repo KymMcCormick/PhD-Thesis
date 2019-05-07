@@ -1,0 +1,133 @@
+---
+title: "Testing eyewitness data against the Block-Marschak inequalities"
+author: "Kym McCormick"
+date: "3 May 2019"
+output:
+  word_document: default
+  pdf_document: default
+  html_notebook: default
+---
+```{r setup, include=FALSE, results='hide'}
+
+knitr::opts_chunk$set(echo = TRUE)
+
+#For fitting the Block-Marschack and the other inequalities, we need a function that solves quadratic equations with inequality constraints. R offers several such packages, see section 'Quadratic Optimization' on: https://cran.r-project.org/view=Optimization Initially, we used the most popular package, quadprog (https://cran.r-project.org/package=quadprog) for this purpose. However, in some cases the function got stuck. Consequently, we tried other packages. Frr example, we observed good, albeit slow, results with Dykstra (https://cran.r-project.org/package=Dykstra). So all results reported here should replicate with Dykstra as well. We finally settled on quadprogpp which is a new and fast implementation of quadprog, which currently is only available from github: https://github.com/fnoorian/quadprogpp  It requires a C++ compiler (e.g., Rtools on Windows or Xtools on Mac) and can then be installed via devtools.
+
+library("psych", lib.loc="~/R/win-library/3.5")
+library("tidyverse", lib.loc="~/R/win-library/3.5")
+library("jsonlite", lib.loc="~/R/win-library/3.5")
+
+#if (!(require("devtools"))) install.packages("devtools")
+#devtools::install_github("fnoorian/quadprogpp", force = TRUE)
+library("quadprogpp", lib.loc="~/R/win-library/3.5") ## for fitting Block-Marschak
+
+```
+
+```{r data wrangling, include=FALSE}
+setwd("C:/Users/mccormick/GitHub/PhD-Thesis")
+
+data <- read.csv("data/Experiment 3/experiment3data.csv")
+
+
+din <- data %>%
+  select(uid,
+         condition, 
+         Test_T1_suspectIdentified, 
+         confidence_rating, 
+         justification_justification, 
+         Rank_T1_selectionOrder, 
+         demographics_age, 
+         demographics_gender, 
+         demographics_country)%>%
+  filter(demographics_country == "USA", !is.na(confidence_rating)) %>%
+  separate(condition,c("memory","expectation","target"))  %>%
+  separate(Rank_T1_selectionOrder,c("Rank_1","Rank_2","Rank_3","Rank_4","Rank_5","Rank_6","Rank_7","Rank_8"))
+
+din = mutate(din, decile = ntile(din$confidence_rating,10))
+
+din$CID <- if_else(din$target == "P" & din$Test_T1_suspectIdentified == "F68", 1, 0)
+din$Miss <- if_else(din$target == "P" & din$Test_T1_suspectIdentified == "Silhouette", 1, 0)
+din$CR <- if_else(din$target == "A" & din$Test_T1_suspectIdentified == "Silhouette", 1, 0)
+din$TPFoilID <- if_else(din$target == "P" & din$Test_T1_suspectIdentified != "F68", 1, 0)
+din$TAFoilID <- if_else(din$target == "A" & din$Test_T1_suspectIdentified != "Silhouette", 1, 0)
+din$n <- if_else(!is.na(din$demographics_country) == "USA",1,0)
+din$R1_Corr <- if_else(din$target == "P" & din$Rank_1 == "F68", 1, 0)
+din$R2_Corr <- if_else(din$target == "P" & din$Rank_2 == "F68", 1, 0)
+din$R3_Corr <- if_else(din$target == "P" & din$Rank_3 == "F68", 1, 0)
+din$R4_Corr <- if_else(din$target == "P" & din$Rank_4 == "F68", 1, 0)
+din$R5_Corr <- if_else(din$target == "P" & din$Rank_5 == "F68", 1, 0)
+din$R6_Corr <- if_else(din$target == "P" & din$Rank_6 == "F68", 1, 0)
+din$R7_Corr <- if_else(din$target == "P" & din$Rank_7 == "F68", 1, 0)
+din$R8_Corr <- if_else(din$target == "P" & din$Rank_8 == "F68", 1, 0)
+
+write.csv(din, file = "Experiment3dataCleaned.csv")
+```
+
+##Demographics                         ##
+```{r demographics, echo=FALSE}
+#length(unique(din$uid))
+
+describe(din$demographics_age)
+
+demo <- din %>% 
+  select(demographics_age, demographics_gender, demographics_country)# %>% 
+
+demo %>% 
+  select(-demographics_age) %>%
+  map(~prop.table(table(.)))
+```
+##Identification Data
+
+ 
+
+```{r,echo=FALSE}
+
+
+
+ID_dat <- din %>% 
+  group_by(decile) %>%
+  summarise(CID = sum(CID),
+            FID = sum(TAFoilID)/7,
+            n = n())  
+
+ID_dat
+
+Rank_dat <- din  %>% 
+  
+
+```
+Vector of Correct ID and False ID counts for each confidence decile. Note that False ID counts are the number of identifications from target absent lineups divided by the number of items within the lineup (n = 8)
+
+```{r}
+ID_dvector <- din %>% 
+  group_by(decile) %>%
+  summarise(Correct = sum(CID),
+            False = sum(TAFoilID)/8,
+            n = n())  %>%
+  select(-decile,-n) %>% 
+  as.matrix() %>% 
+  t() %>% 
+  as.vector
+
+ID_dvector
+
+
+```
+Vector of CIDs and FIDs for each confidence decile. Note that FIDs are calculated using Wixted & Mickes method, as per above.
+
+```{r, echo=FALSE}
+ID_prop_vector <- din %>% 
+  group_by(decile) %>% 
+  summarise(CID = sum(CID)/sum(n),
+            FID = sum(TAFoilID)/8/sum(n)) %>% 
+  select(-decile) %>% 
+  as.matrix() %>% 
+  t() %>% 
+  as.vector
+
+ID_prop_vector
+```
+
+
+
+
