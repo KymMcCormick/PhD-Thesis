@@ -1,0 +1,151 @@
+---
+title: "Ranking Analysis"
+output:
+  pdf_document: default
+  html_notebook: default
+---
+
+
+##Required data structure
+
+The experimental data was saved in a .csv file format with the following column headatags:
+
+Memory_Strength (in 2017 this was titled 'video_Length')
+Expectation (there is an assumption that this variable will be included)
+Rank_1
+Rank_2
+Rank_3
+Rank_4
+Rank_5
+Rank_6
+Rank_7
+Rank_8
+
+Note that only F68 Present trials are included in this data set
+
+```{r}
+data <- Experiment3data
+
+data <- Experiment3data %>%
+  select(uid,
+         condition, 
+         Test_T1_suspectIdentified, 
+         confidence_rating, 
+         justification_justification, 
+         Rank_T1_selectionOrder, 
+         demographics_age, 
+         demographics_gender, 
+         demographics_country)%>%
+  filter(demographics_country == "USA", !is.na(confidence_rating)) %>%
+  separate(condition,c("memory","expectation","F68"))  %>%
+  separate(Rank_T1_selectionOrder,c("Rank_1","Rank_2","Rank_3","Rank_4","Rank_5","Rank_6","Rank_7","Rank_8"))
+
+data = mutate(data, decile = ntile(data$confidence_rating,10))
+
+data$CID <- if_else(data$F68 == "P" & data$Test_T1_suspectIdentified == "F68", 1, 0)
+data$Miss <- if_else(data$F68 == "P" & data$Test_T1_suspectIdentified == "Silhouette", 1, 0)
+data$CR <- if_else(data$F68 == "A" & data$Test_T1_suspectIdentified == "Silhouette", 1, 0)
+data$TPFoilID <- if_else(data$F68 == "P" & data$Test_T1_suspectIdentified != "F68", 1, 0)
+data$TAFoilID <- if_else(data$F68 == "A" & data$Test_T1_suspectIdentified != "Silhouette", 1, 0)
+data$n <- if_else(!is.na(data$demographics_country) == "USA",1,0)
+data$R1_Corr <- if_else(data$F68 == "P" & data$Rank_1 == "F68", 1, 0)
+data$R2_Corr <- if_else(data$F68 == "P" & data$Rank_2 == "F68", 1, 0)
+data$R3_Corr <- if_else(data$F68 == "P" & data$Rank_3 == "F68", 1, 0)
+data$R4_Corr <- if_else(data$F68 == "P" & data$Rank_4 == "F68", 1, 0)
+data$R5_Corr <- if_else(data$F68 == "P" & data$Rank_5 == "F68", 1, 0)
+data$R6_Corr <- if_else(data$F68 == "P" & data$Rank_6 == "F68", 1, 0)
+data$R7_Corr <- if_else(data$F68 == "P" & data$Rank_7 == "F68", 1, 0)
+data$R8_Corr <- if_else(data$F68 == "P" & data$Rank_8 == "F68", 1, 0)
+
+```
+
+
+
+
+
+SPLITTING THE CLEANED DATA INTO TWO MANIPULATION GROUPS (LONG/SHORT EXPOSURE)
+---------------------------------------------------------------------------------------
+```{r}
+Strong <- data %>%   filter(memory == "S")
+
+Weak <- data %>%   filter(memory == "W")
+```
+
+
+PROPORTION CORRECT PER RANK
+----------------------------
+
+```{r}
+library(plyr)
+
+Prop.correct <- function(data,size){
+  counts <- matrix()
+  for (i in 1:size){
+    rank <- toString(paste("Rank_",i, sep = ""))
+    new <- count(data, rank)
+    counts <- c(counts,new[2])
+  }
+  counts <- as.data.frame(counts)  
+  counts <- counts[-c(1)]
+  counts <- counts/colSums(counts)
+  print(counts)
+}
+```
+
+Run the function:
+
+```{r}
+analysis1 <- Prop.correct(data,8)
+```
+
+
+UNCONDITIONAL RANK PROPORTION CORRECT
+---------------------------------------------
+
+```{r}
+Rank.Prop.Correct <- function(data){
+  unconditional.data <- (c(
+    sum(data$Rank_1 == "F68")/nrow(data),
+    sum(data$Rank_2 == "F68")/nrow(data),
+    sum(data$Rank_3 == "F68")/nrow(data),
+    sum(data$Rank_4 == "F68")/nrow(data),
+    sum(data$Rank_5 == "F68")/nrow(data),
+    sum(data$Rank_6 == "F68")/nrow(data)
+  ))
+return(plot(unconditional.data))
+}
+Rank.Prop.Correct(data)
+Rank.Prop.Correct(Strong)
+Rank.Prop.Correct(Weak)
+```
+
+CONDITIONAL RANK PROPORTION CORRECT
+----------------------------------------------
+
+```{r}
+Rank.Cond.Prop.Correct <- function(data){
+  C1 <- data
+  C2 <- subset(data, Rank_1 != "F68")
+  C3 <- subset(data, Rank_1 != "F68"& Rank_2 != "F68")
+  C4 <- subset(data, Rank_1 != "F68"& Rank_2 != "F68"& Rank_3 != "F68")
+  C5 <- subset(data, Rank_1 != "F68"& Rank_2 != "F68"& Rank_3 != "F68"& Rank_4 != "F68")
+  C6 <- subset(data, Rank_1 != "F68"& Rank_2 != "F68"& Rank_3 != "F68"& Rank_4 != "F68"& Rank_5 != "F68")
+  conditional.data <- (c(
+    sum(C1$Rank_1 == "F68")/nrow(C1),
+    sum(C2$Rank_2 == "F68")/nrow(C2),
+    sum(C3$Rank_3 == "F68")/nrow(C3),
+    sum(C4$Rank_4 == "F68")/nrow(C4),
+    sum(C5$Rank_5 == "F68")/nrow(C5),
+    sum(C6$Rank_6 == "F68")/nrow(C6)
+  ))
+  return(plot(conditional.data))
+}
+Rank.Cond.Prop.Correct(data)
+Rank.Cond.Prop.Correct(Strong)
+Rank.Cond.Prop.Correct(Weak)
+```
+
+
+
+
+
