@@ -61,7 +61,7 @@ din$R6_Corr <- if_else(din$target == "P" & din$Rank_6 == "F68", 1, 0)
 din$R7_Corr <- if_else(din$target == "P" & din$Rank_7 == "F68", 1, 0)
 din$R8_Corr <- if_else(din$target == "P" & din$Rank_8 == "F68", 1, 0)
 
-write.csv(din, file = "Experiment3dataCleaned.csv")
+#write.csv(din, file = "Experiment3dataCleaned.csv")
 ```
 
 ##Demographics                         ##
@@ -86,9 +86,15 @@ Number of Correct and False IDs per confidence decile
 
 ID_dat <- din %>% 
   group_by(decile) %>%
-  summarise(Correct_ID = sum(CID),
-            False_ID = sum(TAFoilID)/8,
-            n = n())  
+  summarise(
+    Miss = sum(Miss),
+    TPFID = sum(TPFoilID),
+    Correct_ID = sum(CID),
+    CR = sum(CR),
+    TAFID = sum(TAFoilID),
+    False_ID = sum(TAFoilID)/8,
+    n = n()
+    )  
 
 ID_dat
 
@@ -98,17 +104,39 @@ Vector of Correct ID and False ID counts for each confidence decile. Note that F
 ```{r}
 ID_dvector <- din %>% 
   group_by(decile) %>%
-  summarise(Correct = sum(CID),
-            False = sum(TAFoilID)/8,
-            n = n())  %>%
+  summarise(
+    Miss = sum(Miss),
+    TPFID = sum(TPFoilID),
+    Correct_ID = sum(CID),
+    CR = sum(CR),
+    TAFID = sum(TAFoilID),
+    False_ID = sum(TAFoilID)/8,
+    n = n()
+    )  %>%
   select(-decile,-n) %>% 
   as.matrix() %>% 
   t() %>% 
-  as.vector
+  as.vector #%>%
+  #structure(.Dim= c(10L,6L))
 
 ID_dvector
 
+ID_dvector2 <- din %>% 
+  group_by(decile) %>%
+  summarise(
+    Miss = n()-sum(CID),
+    Correct_ID = sum(CID),
+    CR = n()-sum(TAFoilID)/8,
+    False_ID = sum(TAFoilID)/8,
+    n = n()
+    )  %>%
+  select(-decile,-n) %>% 
+  as.matrix() %>% 
+  t() %>% 
+  as.vector #%>%
+  #structure(.Dim= c(10L,4L))
 
+ID_dvector2
 ```
 Vector of CIDs and FIDs for each confidence decile. Note that FIDs are calculated using Wixted & Mickes method, as per above.
 
@@ -261,6 +289,193 @@ Rank_strong$parameters
 ```{r}
 Rank_weak$goodness.of.fit
 Rank_weak$parameters
+```
+
+
+```{r}
+IndObvSDT_eyewit <- function(Q, data, param.names, n.params, tmp.env){
+
+  n <- 8 
+  mean <- Q[1]
+  sd <- Q[2]
+  cr <- c(Q[3:12])  #confidence criterion
+
+  v <- vector()
+
+  for (i in 1:length(cr)) {
+    TID <-  integrate(
+      f = function(x){
+        dnorm(x,mean,sd)*(pnorm(x,0,1)^(n-1))
+        },
+      lower = cr[i],
+      upper = Inf
+      )$value
+    FID <- (n-1)*(integrate(
+      f = function(x) {
+        dnorm(x,0,1)*pnorm(x,mean,sd)*(pnorm(x,0,1)^(n-2))
+        },
+      lower = cr[i],
+      upper = Inf
+      )$value
+    )
+    FA <- 1-pnorm(cr[i])^n
+    TD <- 1-(pnorm((mean-cr[i])/sd)*(pnorm(cr[i])^(n-1)))
+
+    I <- c(
+      t(
+        cbind(
+          1-(FID+TID), #Miss (TP)
+          FID,         #Foil ID (TP)
+          TID,         #Target ID
+          1-FA,        #Correct Rejection (TA)
+          FA/n,        #Foil ID (TA)
+          FA*((n-1)/n) #False ID (TA)
+        )
+      )
+    )
+
+v <- cbind(v,I)
+
+
+  }
+
+  Outcomes <- c(t(v))
+  return(Outcomes)
+  
+
+}
+
+
+IndObvMLE <- function(Q, data, param.names, n.params, tmp.env, lower.bound, upper.bound){
+
+    e <- IndObvSDT_eyewit(Q, param.names, n.params, tmp.env)
+    LL <- -sum(data[data!=0]*log(e[data!=0]))
+
+   
+
+    return(LL)
+
+}
+
+```
+
+```{r}
+
+fit_kafc <- fit.mptinr(
+
+    data = ID_dvector,
+
+    objective = IndObvMLE,
+
+    param.names = c("mu", "sigma", "cr1", "cr2", "cr3", "cr4", "cr5", "cr6", "cr7", "cr8", "cr9", "cr10"),
+
+    categories.per.type = c(6,6,6,6,6,6,6,6,6,6),
+
+    prediction = IndObvSDT_eyewit,
+
+    lower.bound = c(0,0.1,-Inf,-Inf,-Inf,-Inf,-Inf,-Inf,-Inf,-Inf,-Inf,-Inf),
+
+    upper.bound = Inf,
+
+    n.optim = 5,
+
+    #starting.values = c(1,1,1,1,1,1,1,1,1,1,1,1,1,1),
+
+    show.messages = FALSE
+
+)
+
+ 
+
+fit_kafc$goodness.of.fit
+
+fit_kafc$parameters
+```
+
+
+```{r}
+UVSDT_eyewit <- function(Q, data, param.names, n.params, tmp.env){
+
+  n <- 8 
+  mean <- Q[1]
+  sd <- Q[2]
+  cr <- c(Q[3:12])  #confidence criterion
+
+  v <- vector()
+
+  for (i in 1:length(cr)) {
+    CID <-  integrate(
+      f = function(x){
+        dnorm(x,mean,sd)*(pnorm(x,0,1)^(n-1))
+        },
+      lower = cr[i],
+      upper = Inf
+      )$value
+    FID <- (n-1)*(integrate(
+      f = function(x) {
+        dnorm(x,0,1)*pnorm(x,mean,sd)*(pnorm(x,0,1)^(n-2))
+        },
+      lower = cr[i],
+      upper = Inf
+      )$value
+    )*((n-1)/n)
+    I <- c(
+      t(
+        cbind( 1-CID, CID, 1-(FID), FID )
+      )
+    )
+
+v <- cbind(v,I)
+
+
+  }
+
+  Outcomes <- c(t(v))
+  return(Outcomes)
+  
+
+}
+ 
+
+IndObvMLE2 <- function(Q, data, param.names, n.params, tmp.env, lower.bound, upper.bound){
+
+    e <- UVSDT_eyewit(Q, param.names, n.params, tmp.env)
+    LL <- -sum(data[data!=0]*log(e[data!=0]))
+
+   
+
+    return(LL)
+
+}
+fit_kafc <- fit.mptinr(
+
+    data = ID_dvector2,
+
+    objective = IndObvMLE2,
+
+    param.names = c("mu", "sigma", "cr1", "cr2", "cr3", "cr4", "cr5", "cr6", "cr7", "cr8", "cr9", "cr10"),
+
+    categories.per.type = c(4,4,4,4,4,4,4,4,4,4),
+
+    prediction = UVSDT_eyewit,
+
+    lower.bound = c(0,0.1,-Inf,-Inf,-Inf,-Inf,-Inf,-Inf,-Inf,-Inf,-Inf,-Inf),
+
+    upper.bound = Inf,
+
+    n.optim = 5,
+
+    starting.values = c(0,0,0,0,0,0,0,0,0,0,0,0),
+
+    show.messages = FALSE
+
+)
+
+ 
+
+fit_kafc$goodness.of.fit
+
+fit_kafc$parameters
 ```
 
 
