@@ -24,9 +24,11 @@ Rank_8
 Note that only F68 Present trials are included in this data set
 
 ```{r}
-data <- Experiment3data
+setwd("C:/Users/mccormick/GitHub/PhD-Thesis")
 
-data <- Experiment3data %>%
+data <- read.csv("data/Experiment 3/experiment3data.csv")
+
+data <- data %>%
   select(uid,
          condition, 
          Test_T1_suspectIdentified, 
@@ -37,25 +39,28 @@ data <- Experiment3data %>%
          demographics_gender, 
          demographics_country)%>%
   filter(demographics_country == "USA", !is.na(confidence_rating)) %>%
-  separate(condition,c("memory","expectation","F68"))  %>%
+  separate(condition,c("memory","expectation","target"))  %>%
   separate(Rank_T1_selectionOrder,c("Rank_1","Rank_2","Rank_3","Rank_4","Rank_5","Rank_6","Rank_7","Rank_8"))
 
 data = mutate(data, decile = ntile(data$confidence_rating,10))
 
-data$CID <- if_else(data$F68 == "P" & data$Test_T1_suspectIdentified == "F68", 1, 0)
-data$Miss <- if_else(data$F68 == "P" & data$Test_T1_suspectIdentified == "Silhouette", 1, 0)
-data$CR <- if_else(data$F68 == "A" & data$Test_T1_suspectIdentified == "Silhouette", 1, 0)
-data$TPFoilID <- if_else(data$F68 == "P" & data$Test_T1_suspectIdentified != "F68", 1, 0)
-data$TAFoilID <- if_else(data$F68 == "A" & data$Test_T1_suspectIdentified != "Silhouette", 1, 0)
+data$CID <- if_else(data$target == "P" & data$Test_T1_suspectIdentified == "F68", 1, 0)
+data$Miss <- if_else(data$target == "P" & data$Test_T1_suspectIdentified == "Silhouette", 1, 0)
+data$CR <- if_else(data$target == "A" & data$Test_T1_suspectIdentified == "Silhouette", 1, 0)
+data$TPFoilID <- if_else(data$target == "P" & data$Test_T1_suspectIdentified != "F68", 1, 0)
+data$TAFoilID <- if_else(data$target == "A" & data$Test_T1_suspectIdentified != "Silhouette", 1, 0)
 data$n <- if_else(!is.na(data$demographics_country) == "USA",1,0)
-data$R1_Corr <- if_else(data$F68 == "P" & data$Rank_1 == "F68", 1, 0)
-data$R2_Corr <- if_else(data$F68 == "P" & data$Rank_2 == "F68", 1, 0)
-data$R3_Corr <- if_else(data$F68 == "P" & data$Rank_3 == "F68", 1, 0)
-data$R4_Corr <- if_else(data$F68 == "P" & data$Rank_4 == "F68", 1, 0)
-data$R5_Corr <- if_else(data$F68 == "P" & data$Rank_5 == "F68", 1, 0)
-data$R6_Corr <- if_else(data$F68 == "P" & data$Rank_6 == "F68", 1, 0)
-data$R7_Corr <- if_else(data$F68 == "P" & data$Rank_7 == "F68", 1, 0)
-data$R8_Corr <- if_else(data$F68 == "P" & data$Rank_8 == "F68", 1, 0)
+data$R1_Corr <- if_else(data$target == "P" & data$Rank_1 == "F68", 1, 0)
+data$R2_Corr <- if_else(data$target == "P" & data$Rank_2 == "F68", 1, 0)
+data$R3_Corr <- if_else(data$target == "P" & data$Rank_3 == "F68", 1, 0)
+data$R4_Corr <- if_else(data$target == "P" & data$Rank_4 == "F68", 1, 0)
+data$R5_Corr <- if_else(data$target == "P" & data$Rank_5 == "F68", 1, 0)
+data$R6_Corr <- if_else(data$target == "P" & data$Rank_6 == "F68", 1, 0)
+data$R7_Corr <- if_else(data$target == "P" & data$Rank_7 == "F68", 1, 0)
+data$R8_Corr <- if_else(data$target == "P" & data$Rank_8 == "F68", 1, 0)
+
+data <- data%>%
+  filter(target == "P")
 
 ```
 

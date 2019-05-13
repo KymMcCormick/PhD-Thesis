@@ -24,7 +24,7 @@ library("MPTinR", lib.loc="~/R/win-library/3.5")
 
 ```
 
-```{r data wrangling, include=FALSE}
+```{r data wrangling}
 setwd("C:/Users/mccormick/GitHub/PhD-Thesis")
 
 data <- read.csv("data/Experiment 3/experiment3data.csv")
@@ -65,7 +65,7 @@ write.csv(din, file = "Experiment3dataCleaned.csv")
 ```
 
 ##Demographics                         ##
-```{r demographics, echo=FALSE}
+```{r demographics}
 #length(unique(din$uid))
 
 describe(din$demographics_age)
@@ -112,7 +112,7 @@ ID_dvector
 ```
 Vector of CIDs and FIDs for each confidence decile. Note that FIDs are calculated using Wixted & Mickes method, as per above.
 
-```{r, echo=FALSE}
+```{r}
 ID_prop_vector <- din %>% 
   group_by(decile) %>% 
   summarise(CID = sum(CID)/sum(n),
@@ -151,62 +151,34 @@ Rank_prop <- din  %>%
   legend("topright", legend = c("Strong memory","Weak memory"),pch =c(19,17), col = c("black","red"), inset = .05)
   box("plot")
 ```
+
 ```{r}
-Rank_dat <- din  %>%
-  filter(target == "P")%>%
-  group_by(memory) %>%
-  summarise(Rank_1 = sum(R1_Corr),
-            Rank_2 = sum(R2_Corr),
-            Rank_3 = sum(R3_Corr),
-            Rank_4 = sum(R4_Corr),
-            Rank_5 = sum(R5_Corr),
-            Rank_6 = sum(R6_Corr),
-            Rank_7 = sum(R7_Corr),
-            Rank_8 = sum(R8_Corr),
-            n = n()
-            )
-  Rank_dat
-
-  matplot(t(Rank_dat[,2:9]), type = "b", bty="l", pch=c(19,17), ylab = "Proportion Correct", xlab = "Rank position")
-  legend("topright", legend = c("Strong memory","Weak memory"),pch =c(19,17), col = c("black","red"), inset = .05)
-  box("plot")
-```
-
-```{r, echo=FALSE, include=FALSE}
-Rank_N <- din %>%
-  select(target ,memory, n, R1_Corr,R2_Corr, R3_Corr, R4_Corr, R5_Corr, R6_Corr, R7_Corr, R8_Corr)%>%
-  filter(target =="P")
-
-
-
-Rank_cum <- Rank_N %>% 
+Cond_Cum_Rank <- din %>% 
+  filter(target == "P") %>%
   group_by(memory)%>%
-  summarise(Rank_1_C = sum(R1_Corr),
-          #  Rank_1_F = sum(n)-sum(R1_Corr),
-            Rank_2_C = sum(R2_Corr)+Rank_1_C,
-           # Rank_2_F = Rank_1_F + sum(n)-sum(R2_Corr),
-            Rank_3_C = sum(R3_Corr)+Rank_2_C,
-           # Rank_3_F =  Rank_2_F + sum(n)-sum(R3_Corr),
-            Rank_4_C = sum(R4_Corr)+Rank_3_C,
-           # Rank_4_F =  Rank_3_F + sum(n)-sum(R4_Corr),
-            Rank_5_C = sum(R5_Corr)+Rank_4_C,
-           # Rank_5_F =  Rank_4_F + sum(n)-sum(R5_Corr),
-            Rank_6_C = sum(R6_Corr)+Rank_5_C,
-           # Rank_6_F =  Rank_5_F + sum(n)-sum(R6_Corr),
-            Rank_7_C = sum(R7_Corr)+Rank_6_C,
-           # Rank_7_F =  Rank_6_F + sum(n)-sum(R7_Corr),
-            Rank_8_C =  sum(R8_Corr)+Rank_7_C#,
-           # Rank_8_F =  Rank_7_F + sum(n)-sum(R8_Corr)
-            ) 
+  summarise(r1 = sum(R1_Corr),
+            r2 = sum(R2_Corr),
+            r3 = sum(R3_Corr),
+            r4 = sum(R4_Corr),
+            r5 = sum(R5_Corr),
+            r6 = sum(R6_Corr),
+            r7 = sum(R7_Corr),
+            r8 = sum(R8_Corr)
+            ) %>% 
+    select(-memory)%>%
+  as.matrix() %>% 
+  #t() %>% 
+  as.vector%>%
+  structure(.Dim= c(2L,8L))
 
-Rank_cum
-matplot(t(Rank_cum[,2:9]), type = "b", bty="l", pch=c(19,17), ylab = "Proportion Correct", xlab = "Rank position")
-  legend("topright", legend = c("Strong memory","Weak memory"),pch =c(19,17), col = c("black","red"), inset = .05)
-  box("plot")
+Cond_Cum_Rank <- Cond_Cum_Rank %>%
+  mutate (c1 = r1/377,
+             c2 = r2/(377-r1))
+Cond_Cum_Rank
+
 ```
 
-
-```{r, echo=FALSE}
+```{r}
 Rank_dvector <- din %>% 
   filter(target == "P") %>%
   group_by(memory)%>%
@@ -230,7 +202,7 @@ Rank_dvector
 ```
 
 
-```{r, echo= FALSE, include=FALSE}
+```{r}
 
 
 expSDTrank <- function(Q, param.names, n.params, tmp.env){
