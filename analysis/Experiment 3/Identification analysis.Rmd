@@ -225,7 +225,7 @@ HIT_FA_WL <- ID_dat %>%
 HIT_FA_WL <- HIT_FA_WL[10:1,]
 
 HIT_FA_WL<- HIT_FA_WL %>%
-  transform (Correct_ID = Correct_ID/sum(TP), False_ID = False_ID/sum(TP)  )%>%
+  transform (Correct_ID = Correct_ID/sum(TP), False_ID = False_ID/sum(TA)  )%>%
   transform(HIT = cumsum(Correct_ID),
             FAR = cumsum(False_ID)
   ) %>%
@@ -245,7 +245,7 @@ HIT_FA_WH <- ID_dat %>%
 HIT_FA_WH <- HIT_FA_WH[10:1,]
 
 HIT_FA_WH<- HIT_FA_WH %>%
-  transform (Correct_ID = Correct_ID/sum(TP), False_ID = False_ID/sum(TP)  )%>%
+  transform (Correct_ID = Correct_ID/sum(TP), False_ID = False_ID/sum(TA)  )%>%
   transform(HIT = cumsum(Correct_ID),
             FAR = cumsum(False_ID)
   ) %>%
@@ -266,7 +266,7 @@ HIT_FA_SH <- ID_dat %>%
 HIT_FA_SH <- HIT_FA_SH[10:1,]
 
 HIT_FA_SH<- HIT_FA_SH %>%
-  transform (Correct_ID = Correct_ID/sum(TP), False_ID = False_ID/sum(TP)  )%>%
+  transform (Correct_ID = Correct_ID/sum(TP), False_ID = False_ID/sum(TA)  )%>%
   transform(HIT = cumsum(Correct_ID),
             FAR = cumsum(False_ID)
   ) %>%
@@ -286,7 +286,7 @@ HIT_FA_SL <- ID_dat %>%
 HIT_FA_SL <- HIT_FA_SL[10:1,]
 
 HIT_FA_SL<- HIT_FA_SL%>%
-  transform (Correct_ID = Correct_ID/sum(TP), False_ID = False_ID/sum(TP)  ) %>%
+  transform (Correct_ID = Correct_ID/sum(TP), False_ID = False_ID/sum(TA)  ) %>%
   transform(HIT = cumsum(Correct_ID),
             FAR = cumsum(False_ID)
   ) %>%
@@ -307,7 +307,8 @@ ggplot(HIT_FA_WL, aes(x=FAR, y=HIT)) +
   geom_point(data = HIT_FA_SH, aes(x=FAR, y=HIT), colour = 'black', shape = 3) +
   geom_point(data = HIT_FA_SL, aes(x=FAR, y=HIT), colour = 'black', shape = 2) +
   xlim(0,.2) +
-  ylim(0,.7)
+  ylim(0,.7)+ 
+  theme(legend.position="top")
 ```
 
 
