@@ -102,6 +102,14 @@ ID_dat
 Vector of Correct ID and False ID counts for each confidence decile. Note that False ID counts are the number of identifications from target absent lineups divided by the number of items within the lineup (n = 8)
 
 ```{r}
+TA <- sum(din$target == "A")
+TP <- sum(din$target == "P")
+CID <- sum(din$CID)
+FID <- sum(din$TAFoilID)
+size <- 8
+TP_Reject <- TP-sum(din$CID)
+TA_Reject <- TA-(sum(din$TAFoilID)/size)
+
 ID_dvector <- din %>% 
   group_by(decile) %>%
   summarise(
@@ -110,49 +118,61 @@ ID_dvector <- din %>%
     Correct_ID = sum(CID),
     CR = sum(CR),
     TAFID = sum(TAFoilID),
-    False_ID = sum(TAFoilID)/8,
+    False_ID = sum(TAFoilID)/size,
     n = n()
     )  %>%
-  select(-decile,-n) %>% 
-  as.matrix() %>% 
-  t() %>% 
+  select(-decile,-n,-Miss,-TPFID,-CR,-TAFID) %>% 
+ as.matrix() %>% 
+  #t() %>% 
   as.vector #%>%
   #structure(.Dim= c(10L,6L))
 
+ID_dvector <- append(ID_dvector,TP_Reject,after= 0)
+ID_dvector <- append(ID_dvector,TA_Reject,after = 11)
 ID_dvector
 
-ID_dvector2 <- din %>% 
-  group_by(decile) %>%
-  summarise(
-    Miss = n()-sum(CID),
-    Correct_ID = sum(CID),
-    CR = n()-sum(TAFoilID)/8,
-    False_ID = sum(TAFoilID)/8,
-    n = n()
-    )  %>%
-  select(-decile,-n) %>% 
-  as.matrix() %>% 
-  t() %>% 
-  as.vector #%>%
-  #structure(.Dim= c(10L,4L))
 
-ID_dvector2
 ```
 Vector of CIDs and FIDs for each confidence decile. Note that FIDs are calculated using Wixted & Mickes method, as per above.
 
 ```{r}
-ID_prop_vector <- din %>% 
+TA <- sum(din$target == "A")
+TP <- sum(din$target == "P")
+
+ID_cum_vector <- din %>% 
   group_by(decile) %>% 
-  summarise(CID = sum(CID)/sum(n),
-            FID = sum(TAFoilID)/8/sum(n)) %>% 
-  select(-decile) %>% 
+  summarise(
+    Miss = sum(Miss) ,
+    TPFoilID = sum(TPFoilID),
+    CID = sum(CID),
+    CR = sum(CR) ,
+    TAFoilID = sum(TAFoilID)/8*7,
+    FID = sum(TAFoilID)/8
+    ) 
+
+ID_cum_vector <-  ID_cum_vector[10:1,]
+ID_cum_vector1 <-  ID_cum_vector %>%
+  transform(Miss = cumsum(Miss), TPFoilID = cumsum(TPFoilID), CID = cumsum(CID), CR = cumsum(CR),TAFoilID = cumsum(TAFoilID), FID = cumsum(FID)) %>%
+  mutate(Miss = (TP - TPFoilID - CID), CR = TA-FID-TAFoilID) %>%
+
+ select(-decile) %>%
+
   as.matrix() %>% 
-  t() %>% 
+  t()%>% 
   as.vector
 
-ID_prop_vector
+ID_cum_vector1
 
+ID_cum_vector2 <-  ID_cum_vector %>%
+  transform(Miss = cumsum(Miss), TPFoilID = cumsum(TPFoilID), CID = cumsum(CID), CR = cumsum(CR),TAFoilID = cumsum(TAFoilID), FID = cumsum(FID)) %>%
+  mutate(Miss = (TP  - CID), CR = TA-FID) %>%
+ select(-decile,-TPFoilID,-TAFoilID) %>%
 
+  as.matrix() %>% 
+  t()%>% 
+  as.vector
+
+ID_cum_vector2
 
 ```
 
@@ -318,18 +338,18 @@ IndObvSDT_eyewit <- function(Q, data, param.names, n.params, tmp.env){
       upper = Inf
       )$value
     )
-    FA <- 1-pnorm(cr[i])^n
-    TD <- 1-(pnorm((mean-cr[i])/sd)*(pnorm(cr[i])^(n-1)))
+    FA <- (1-pnorm(cr[i])^n)/n
+    #TD <- 1-(pnorm((mean-cr[i])/sd)*(pnorm(cr[i])^(n-1)))
 
     I <- c(
       t(
         cbind(
-          1-(FID+TID), #Miss (TP)
-          FID,         #Foil ID (TP)
-          TID,         #Target ID
-          1-FA,        #Correct Rejection (TA)
-          FA/n,        #Foil ID (TA)
-          FA*((n-1)/n) #False ID (TA)
+          (1-(FID+TID)),#Miss (TP)
+          FID,          #Foil ID (TP)
+          TID,          #Target ID
+          1-FA,           #Correct Rejection (TA)
+          FA*(n-1)/n,     #Foil ID (TA)
+          FA              #False ID (TA)
         )
       )
     )
@@ -363,7 +383,7 @@ IndObvMLE <- function(Q, data, param.names, n.params, tmp.env, lower.bound, uppe
 
 fit_kafc <- fit.mptinr(
 
-    data = ID_dvector,
+    data = ID_cum_vector,
 
     objective = IndObvMLE,
 
@@ -411,22 +431,17 @@ UVSDT_eyewit <- function(Q, data, param.names, n.params, tmp.env){
       lower = cr[i],
       upper = Inf
       )$value
-    FID <- (n-1)*(integrate(
-      f = function(x) {
-        dnorm(x,0,1)*pnorm(x,mean,sd)*(pnorm(x,0,1)^(n-2))
-        },
-      lower = cr[i],
-      upper = Inf
-      )$value
-    )*((n-1)/n)
+        
+    FA <- (1-pnorm(cr[i])^n)/n
+
     I <- c(
       t(
-        cbind( 1-CID, CID, 1-(FID), FID )
+        cbind( (1-CID), CID, 1-(FA), FA )
       )
     )
 
 v <- cbind(v,I)
-
+#print(v)
 
   }
 
@@ -447,9 +462,13 @@ IndObvMLE2 <- function(Q, data, param.names, n.params, tmp.env, lower.bound, upp
     return(LL)
 
 }
+```
+
+```{r}
+
 fit_kafc <- fit.mptinr(
 
-    data = ID_dvector2,
+    data = ID_cum_vector2,
 
     objective = IndObvMLE2,
 
@@ -478,4 +497,43 @@ fit_kafc$goodness.of.fit
 fit_kafc$parameters
 ```
 
+
+```{r}
+n <- 8
+UVSDT <-"
+pnorm((cr1 - mu)/ss)
+pnorm((cr1+cr2 - mu)/ss) - pnorm((cr1 - mu)/ss)
+pnorm((cr1+cr2+cr3 - mu)/ss) - pnorm((cr1+cr2 - mu)/ss)
+pnorm((cr1+cr2+cr3+cr4 - mu)/ss) - pnorm((cr1+cr2+cr3 - mu)/ss)
+pnorm((cr1+cr2+cr3+cr4+cr5 - mu)/ss) - pnorm((cr1+cr2+cr3+cr4 - mu)/ss)
+pnorm((cr1+cr2+cr3+cr4+cr5+cr6 - mu)/ss) - pnorm((cr1+cr2+cr3+cr4+cr5 - mu)/ss)
+pnorm((cr1+cr2+cr3+cr4+cr5+cr6+cr7 - mu)/ss) - pnorm((cr1+cr2+cr3+cr4+cr5+cr6 - mu)/ss)
+pnorm((cr1+cr2+cr3+cr4+cr5+cr6+cr7+cr8 - mu)/ss) - pnorm((cr1+cr2+cr3+cr4+cr5+cr6+cr7 - mu)/ss)
+pnorm((cr1+cr2+cr3+cr4+cr5+cr6+cr7+cr8+cr9 - mu)/ss) - pnorm((cr1+cr2+cr3+cr4+cr5+cr6+cr7+cr8 - mu)/ss)
+pnorm((cr1+cr2+cr3+cr4+cr5+cr6+cr7+cr8+cr9+cr10 - mu)/ss) - pnorm((cr1+cr2+cr3+cr4+cr5+cr6+cr7+cr8+cr9 - mu)/ss)
+
+1 - pnorm((cr1+cr2+cr3+cr4+cr5+cr6+cr7+cr8+cr9+cr10 - mu)/ss)
+
+pnorm((cr1))
+pnorm((cr1+cr2)) - pnorm((cr1))
+pnorm((cr1+cr2+cr3)) - pnorm((cr1+cr2))
+pnorm((cr1+cr2+cr3+cr4)) - pnorm((cr1+cr2+cr3))
+pnorm((cr1+cr2+cr3+cr4+cr5)) - pnorm((cr1+cr2+cr3+cr4))
+pnorm((cr1+cr2+cr3+cr4+cr5+cr6)) - pnorm((cr1+cr2+cr3+cr4+cr5))
+pnorm((cr1+cr2+cr3+cr4+cr5+cr6+cr7)) - pnorm((cr1+cr2+cr3+cr4+cr5+cr6))
+pnorm((cr1+cr2+cr3+cr4+cr5+cr6+cr7+cr8)) - pnorm((cr1+cr2+cr3+cr4+cr5+cr6+cr7))
+pnorm((cr1+cr2+cr3+cr4+cr5+cr6+cr7+cr8+cr9)) - pnorm((cr1+cr2+cr3+cr4+cr5+cr6+cr7+cr8))
+pnorm((cr1+cr2+cr3+cr4+cr5+cr6+cr7+cr8+cr9+cr10)) - pnorm((cr1+cr2+cr3+cr4+cr5+cr6+cr7+cr8+cr9))
+
+1 - pnorm((cr1+cr2+cr3+cr4+cr5+cr6+cr7+cr8+cr9+cr10))
+"
+
+
+fit_UVSDT <- fit.model(ID_dvector,textConnection(UVSDT),lower.bound=c(-Inf,rep(0,9),0,0.1),upper.bound=rep(Inf,12), n.optim=5, show.messages = FALSE)
+
+
+
+fit_UVSDT$goodness.of.fit # goodness of fit
+fit_UVSDT$parameters # parameters
+```
 
