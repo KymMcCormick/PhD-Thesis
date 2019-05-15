@@ -40,20 +40,22 @@ din <- data %>%
   separate(condition,c("memory","expectation","target")) %>%
   
 ## separate the ranking variable into separate columns ---
-  separate(Rank_T1_selectionOrder,c("Rank_1","Rank_2","Rank_3","Rank_4","Rank_5","Rank_6","Rank_7","Rank_8"))
+  separate(Rank_T1_selectionOrder,c("Rank_1","Rank_2","Rank_3","Rank_4","Rank_5","Rank_6","Rank_7","Rank_8"))%>%
+
+## Create columns recording accuracy for each rank --- Again, there is probably a better way to do this
+  mutate(R1_Corr = if_else(target == "P" & Rank_1 == "F68", 1, 0),
+         R2_Corr = if_else(target == "P" & Rank_2 == "F68", 1, 0),
+         R3_Corr = if_else(target == "P" & Rank_3 == "F68", 1, 0),
+         R4_Corr = if_else(target == "P" & Rank_4 == "F68", 1, 0),
+         R5_Corr = if_else(target == "P" & Rank_5 == "F68", 1, 0),
+         R6_Corr = if_else(target == "P" & Rank_6 == "F68", 1, 0),
+         R7_Corr = if_else(target == "P" & Rank_7 == "F68", 1, 0),
+         R8_Corr = if_else(target == "P" & Rank_8 == "F68", 1, 0)
+         )
 
 ## Create a column of counts --- There is probably an easier way to do this  
 din$n <- if_else(!is.na(din$demographics_country) == "USA",1,0)
 
-## Create columns recording accuracy for each rank --- Again, there is probably a better way to do this
-din$R1_Corr <- if_else(din$target == "P" & din$Rank_1 == "F68", 1, 0)
-din$R2_Corr <- if_else(din$target == "P" & din$Rank_2 == "F68", 1, 0)
-din$R3_Corr <- if_else(din$target == "P" & din$Rank_3 == "F68", 1, 0)
-din$R4_Corr <- if_else(din$target == "P" & din$Rank_4 == "F68", 1, 0)
-din$R5_Corr <- if_else(din$target == "P" & din$Rank_5 == "F68", 1, 0)
-din$R6_Corr <- if_else(din$target == "P" & din$Rank_6 == "F68", 1, 0)
-din$R7_Corr <- if_else(din$target == "P" & din$Rank_7 == "F68", 1, 0)
-din$R8_Corr <- if_else(din$target == "P" & din$Rank_8 == "F68", 1, 0)
 
 ```
 

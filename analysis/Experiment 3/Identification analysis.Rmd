@@ -1,0 +1,412 @@
+---
+title: "Eyewitness identification data analysis"
+author: "Kym McCormick"
+date: "15 May 2019"
+output:
+  word_document: default
+  pdf_document: default
+  html_notebook: default
+---
+```{r setup, include=FALSE, results='hide'}
+
+knitr::opts_chunk$set(echo = TRUE)
+
+
+library("psych", lib.loc="~/R/win-library/3.5")
+library("tidyverse", lib.loc="~/R/win-library/3.5")
+
+library("MPTinR", lib.loc="~/R/win-library/3.5")
+
+```
+
+```{r data wrangling}
+setwd("C:/Users/mccormick/GitHub/PhD-Thesis")
+
+data <- read.csv("data/Experiment 3/experiment3data.csv")
+
+
+din <- data %>%
+  select(uid,
+         condition, 
+         Test_T1_suspectIdentified, 
+         confidence_rating, 
+         demographics_age, 
+         demographics_gender, 
+         demographics_country)%>%
+  filter(demographics_country == "USA", !is.na(confidence_rating)) %>%
+  separate(condition,c("memory","expectation","target")) %>%
+  mutate(CID = if_else(target == "P" & Test_T1_suspectIdentified == "F68", 1, 0),
+         Miss = if_else(target == "P" & Test_T1_suspectIdentified == "Silhouette", 1, 0),
+         TPFoilID = if_else(target == "P" & Test_T1_suspectIdentified != "F68" & Test_T1_suspectIdentified != "Silhouette", 1, 0),
+         CR = if_else(target == "A" & Test_T1_suspectIdentified == "Silhouette", 1, 0),
+         TAFoilID = if_else(target == "A" & Test_T1_suspectIdentified != "Silhouette", 1, 0)
+         )
+
+
+#din = mutate(din, decile = ntile(din$confidence_rating,10))
+
+din
+```
+
+
+```{r}
+## There are twice the number of target present lineups than target absent lineups. To rebalance this in a way that preserves the groupings of confidence intervals, I have chosen to double the Target Absent data before grouping into equal sized confidence rating bins
+
+## Separate data into target present and absent dataframes ---
+Ratings_Absent <- din %>%
+  filter(target == "A")
+
+Ratings_Present <- din %>%
+  filter(target == "P")
+
+## Bind back together, doubling up on the target absent group ---
+## NOTE THAT DUPLICATES MAY BE REMOVED USING THE UID NUMBERS ---
+Ratings <- rbind(Ratings_Absent,Ratings_Absent,Ratings_Present)
+
+## Group chooser confidence into decile confidence rating bins
+din_mod_choose <- Ratings %>%
+  filter(Test_T1_suspectIdentified != "Silhouette") %>%
+  mutate(decile_cr = ntile(confidence_rating,10)
+  )
+
+## Group non-chooser confidence into a single zero confidence rating bin
+din_mod_nochoose <- Ratings %>%
+  filter(Test_T1_suspectIdentified == "Silhouette") %>%
+  mutate(decile_cr = 0)
+            
+## Bind chooser and non-chooser data back together
+din_mod <- rbind(din_mod_choose, din_mod_nochoose)
+din_mod
+```
+
+```{r}
+## Check the grouping of the confidence rating deciles to ensure evenness
+Rating_prop <- din_mod %>%
+  select(decile_cr) %>%
+  map(~prop.table(table(.))
+            )
+Rating_prop
+
+```
+
+##Demographics                         ##
+```{r demographics}
+#length(unique(din$uid))
+
+describe(din$demographics_age)
+
+demo <- din %>% 
+  select(demographics_gender) %>% 
+  map(~prop.table(table(.)))
+
+demo
+```
+##Identification Data
+
+ 
+Number of Correct and False IDs per confidence decile
+
+```{r}
+
+ID_dat <- din_mod %>% 
+  group_by(decile_cr) %>%
+  summarise(
+    Miss = sum(Miss),
+    TPFID = sum(TPFoilID),
+    Correct_ID = sum(CID),
+    CR = sum(CR),
+    TAFID = sum(TAFoilID)*7/8,
+    False_ID = sum(TAFoilID)/8,
+    n = n()
+    )  
+
+ID_dat
+
+```
+Vector of Correct ID and False ID counts for each confidence decile. Note that False ID counts are the number of identifications from target absent lineups divided by the number of items within the lineup (n = 8)
+
+```{r}
+
+ID_dvector <- din_mod %>% 
+  group_by(decile_cr) %>%
+  summarise(
+    Miss = sum(Miss)/n(),
+    TPFID = sum(TPFoilID)/n(),
+    Correct_ID = sum(CID)/n(),
+    CR = sum(CR)/n(),
+    TAFID = sum(TAFoilID)*7/8/n(),
+    False_ID = sum(TAFoilID)/8/n(),
+    )  
+
+ # select(-decile,-n,-Miss,-TPFID,-CR,-TAFID) %>% 
+ #as.matrix() %>% 
+  #t() %>% 
+  #as.vector #%>%
+  #structure(.Dim= c(10L,6L))
+
+ID_dvector
+
+
+```
+Vector of CIDs and FIDs for each confidence decile. Note that FIDs are calculated using Wixted & Mickes method, as per above.
+
+```{r}
+## Creating HIT/FA pairs for ROC
+TP <- count(din_mod,target == "P")
+TP
+
+HIT_FA_prop <- ID_dat %>%
+  filter(decile_cr != 0) %>%
+  select(Correct_ID, False_ID) %>%
+  transform(Correct_ID = Correct_ID/1270,
+            False_ID = False_ID/1377) 
+
+HIT_FA_prop <- HIT_FA_prop[10:1,]
+
+HIT_FA_prop
+```
+```{r}
+ROC <- HIT_FA_prop %>%
+  transform(Correct_ID = cumsum(Correct_ID),
+            False_ID = cumsum(False_ID)
+  )
+ROC
+  
+```
+
+```{r}
+HIT <- ROC[1:10,1]
+HIT
+FA <- ROC[1:10,2]
+```
+
+
+##Estimating UV-SDT model parameters
+
+
+
+```{r}
+IndObvSDT_eyewit <- function(Q, data, param.names, n.params, tmp.env){
+
+  n <- 8 
+  mean <- Q[1]
+  sd <- Q[2]
+  cr <- c(Q[3:12])  #confidence criterion
+
+  v <- vector()
+
+  for (i in 1:length(cr)) {
+    TID <-  integrate(
+      f = function(x){
+        dnorm(x,mean,sd)*(pnorm(x,0,1)^(n-1))
+        },
+      lower = cr[i],
+      upper = Inf
+      )$value
+    FID <- (n-1)*(integrate(
+      f = function(x) {
+        dnorm(x,0,1)*pnorm(x,mean,sd)*(pnorm(x,0,1)^(n-2))
+        },
+      lower = cr[i],
+      upper = Inf
+      )$value
+    )
+    FA <- (1-pnorm(cr[i])^n)/n
+    #TD <- 1-(pnorm((mean-cr[i])/sd)*(pnorm(cr[i])^(n-1)))
+
+    I <- c(
+      t(
+        cbind(
+          (1-(FID+TID)),#Miss (TP)
+          FID,          #Foil ID (TP)
+          TID,          #Target ID
+          1-FA,           #Correct Rejection (TA)
+          FA*(n-1)/n,     #Foil ID (TA)
+          FA              #False ID (TA)
+        )
+      )
+    )
+
+v <- cbind(v,I)
+
+
+  }
+
+  Outcomes <- c(t(v))
+  return(Outcomes)
+  
+
+}
+
+
+IndObvMLE <- function(Q, data, param.names, n.params, tmp.env, lower.bound, upper.bound){
+
+    e <- IndObvSDT_eyewit(Q, param.names, n.params, tmp.env)
+    LL <- -sum(data[data!=0]*log(e[data!=0]))
+
+   
+
+    return(LL)
+
+}
+
+```
+
+```{r}
+
+fit_kafc <- fit.mptinr(
+
+    data = ID_cum_vector,
+
+    objective = IndObvMLE,
+
+    param.names = c("mu", "sigma", "cr1", "cr2", "cr3", "cr4", "cr5", "cr6", "cr7", "cr8", "cr9", "cr10"),
+
+    categories.per.type = c(6,6,6,6,6,6,6,6,6,6),
+
+    prediction = IndObvSDT_eyewit,
+
+    lower.bound = c(0,0.1,-Inf,-Inf,-Inf,-Inf,-Inf,-Inf,-Inf,-Inf,-Inf,-Inf),
+
+    upper.bound = Inf,
+
+    n.optim = 5,
+
+    #starting.values = c(1,1,1,1,1,1,1,1,1,1,1,1,1,1),
+
+    show.messages = FALSE
+
+)
+
+ 
+
+fit_kafc$goodness.of.fit
+
+fit_kafc$parameters
+```
+
+
+```{r}
+UVSDT_eyewit <- function(Q, data, param.names, n.params, tmp.env){
+
+  n <- 8 
+  mean <- Q[1]
+  sd <- Q[2]
+  cr <- c(Q[3:12])  #confidence criterion
+
+  v <- vector()
+
+  for (i in 1:length(cr)) {
+    CID <-  integrate(
+      f = function(x){
+        dnorm(x,mean,sd)*(pnorm(x,0,1)^(n-1))
+        },
+      lower = cr[i],
+      upper = Inf
+      )$value
+        
+    FA <- (1-pnorm(cr[i])^n)/n
+
+    I <- c(
+      t(
+        cbind( (1-CID), CID, 1-(FA), FA )
+      )
+    )
+
+v <- cbind(v,I)
+#print(v)
+
+  }
+
+  Outcomes <- c(t(v))
+  return(Outcomes)
+  
+
+}
+ 
+
+IndObvMLE2 <- function(Q, data, param.names, n.params, tmp.env, lower.bound, upper.bound){
+
+    e <- UVSDT_eyewit(Q, param.names, n.params, tmp.env)
+    LL <- -sum(data[data!=0]*log(e[data!=0]))
+
+   
+
+    return(LL)
+
+}
+```
+
+```{r}
+
+fit_kafc <- fit.mptinr(
+
+    data = ID_cum_vector2,
+
+    objective = IndObvMLE2,
+
+    param.names = c("mu", "sigma", "cr1", "cr2", "cr3", "cr4", "cr5", "cr6", "cr7", "cr8", "cr9", "cr10"),
+
+    categories.per.type = c(4,4,4,4,4,4,4,4,4,4),
+
+    prediction = UVSDT_eyewit,
+
+    lower.bound = c(0,0.1,-Inf,-Inf,-Inf,-Inf,-Inf,-Inf,-Inf,-Inf,-Inf,-Inf),
+
+    upper.bound = Inf,
+
+    n.optim = 5,
+
+    starting.values = c(0,0,0,0,0,0,0,0,0,0,0,0),
+
+    show.messages = FALSE
+
+)
+
+ 
+
+fit_kafc$goodness.of.fit
+
+fit_kafc$parameters
+```
+
+
+```{r}
+n <- 8
+UVSDT <-"
+pnorm((cr1 - mu)/ss)
+pnorm((cr1+cr2 - mu)/ss) - pnorm((cr1 - mu)/ss)
+pnorm((cr1+cr2+cr3 - mu)/ss) - pnorm((cr1+cr2 - mu)/ss)
+pnorm((cr1+cr2+cr3+cr4 - mu)/ss) - pnorm((cr1+cr2+cr3 - mu)/ss)
+pnorm((cr1+cr2+cr3+cr4+cr5 - mu)/ss) - pnorm((cr1+cr2+cr3+cr4 - mu)/ss)
+pnorm((cr1+cr2+cr3+cr4+cr5+cr6 - mu)/ss) - pnorm((cr1+cr2+cr3+cr4+cr5 - mu)/ss)
+pnorm((cr1+cr2+cr3+cr4+cr5+cr6+cr7 - mu)/ss) - pnorm((cr1+cr2+cr3+cr4+cr5+cr6 - mu)/ss)
+pnorm((cr1+cr2+cr3+cr4+cr5+cr6+cr7+cr8 - mu)/ss) - pnorm((cr1+cr2+cr3+cr4+cr5+cr6+cr7 - mu)/ss)
+pnorm((cr1+cr2+cr3+cr4+cr5+cr6+cr7+cr8+cr9 - mu)/ss) - pnorm((cr1+cr2+cr3+cr4+cr5+cr6+cr7+cr8 - mu)/ss)
+pnorm((cr1+cr2+cr3+cr4+cr5+cr6+cr7+cr8+cr9+cr10 - mu)/ss) - pnorm((cr1+cr2+cr3+cr4+cr5+cr6+cr7+cr8+cr9 - mu)/ss)
+
+1 - pnorm((cr1+cr2+cr3+cr4+cr5+cr6+cr7+cr8+cr9+cr10 - mu)/ss)
+
+pnorm((cr1))
+pnorm((cr1+cr2)) - pnorm((cr1))
+pnorm((cr1+cr2+cr3)) - pnorm((cr1+cr2))
+pnorm((cr1+cr2+cr3+cr4)) - pnorm((cr1+cr2+cr3))
+pnorm((cr1+cr2+cr3+cr4+cr5)) - pnorm((cr1+cr2+cr3+cr4))
+pnorm((cr1+cr2+cr3+cr4+cr5+cr6)) - pnorm((cr1+cr2+cr3+cr4+cr5))
+pnorm((cr1+cr2+cr3+cr4+cr5+cr6+cr7)) - pnorm((cr1+cr2+cr3+cr4+cr5+cr6))
+pnorm((cr1+cr2+cr3+cr4+cr5+cr6+cr7+cr8)) - pnorm((cr1+cr2+cr3+cr4+cr5+cr6+cr7))
+pnorm((cr1+cr2+cr3+cr4+cr5+cr6+cr7+cr8+cr9)) - pnorm((cr1+cr2+cr3+cr4+cr5+cr6+cr7+cr8))
+pnorm((cr1+cr2+cr3+cr4+cr5+cr6+cr7+cr8+cr9+cr10)) - pnorm((cr1+cr2+cr3+cr4+cr5+cr6+cr7+cr8+cr9))
+
+1 - pnorm((cr1+cr2+cr3+cr4+cr5+cr6+cr7+cr8+cr9+cr10))
+"
+
+
+fit_UVSDT <- fit.model(ID_dvector,textConnection(UVSDT),lower.bound=c(-Inf,rep(0,9),0,0.1),upper.bound=rep(Inf,12), n.optim=5, show.messages = FALSE)
+
+
+
+fit_UVSDT$goodness.of.fit # goodness of fit
+fit_UVSDT$parameters # parameters
+```
+
