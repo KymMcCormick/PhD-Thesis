@@ -272,7 +272,7 @@ ggplot(ROC, aes(x=FID, y=CID)) +
   ggtitle("ROC Eyewitness data (by memory strenghth)")
 ```
 
-```{r fit UVSDT model to all outcomes}
+```{r fit UVSDT model to all outcomes, echo=FALSE}
 IndObvSDT_eyewit <- function(Q, data, param.names, n.params, tmp.env){
   n <- 8 
   mean <- Q[1]
@@ -326,23 +326,13 @@ IndObvMLE <- function(Q, data, param.names, n.params, tmp.env, lower.bound, uppe
 
 }
 
-fit_kafc <- fit.mptinr(
-    data = ID_cum_vector,
-    objective = IndObvMLE,
-    param.names = c("mu", "sigma", "cr1", "cr2", "cr3", "cr4", "cr5", "cr6", "cr7", "cr8", "cr9", "cr10"),
-    categories.per.type = c(6,6,6,6,6,6,6,6,6,6),
-    prediction = IndObvSDT_eyewit,
-    lower.bound = c(0,0.1,-Inf,-Inf,-Inf,-Inf,-Inf,-Inf,-Inf,-Inf,-Inf,-Inf),
-    upper.bound = Inf,
-    n.optim = 5,
-    #starting.values = c(1,1,1,1,1,1,1,1,1,1,1,1,1,1),
-    show.messages = FALSE
-)
+#fit_kafc <- fit.mptinr(    data = ID_cum_vector,    objective = IndObvMLE,    param.names = c("mu", "sigma", "cr1", "cr2", "cr3", "cr4", "cr5", "cr6", "cr7", "cr8", "cr9", "cr10"),    categories.per.type = c(6,6,6,6,6,6,6,6,6,6),    prediction = IndObvSDT_eyewit,    lower.bound = c(0,0.1,-Inf,-Inf,-Inf,-Inf,-Inf,-Inf,-Inf,-Inf,-Inf,-Inf),    upper.bound = Inf,    n.optim = 5,    #starting.values = c(1,1,1,1,1,1,1,1,1,1,1,1,1,1),    show.messages = FALSE)
 
-fit_kafc$goodness.of.fit
-fit_kafc$parameters
-
+#fit_kafc$goodness.of.fit
+#fit_kafc$parameters
 ```
+
+
 
 ```{r fit UVSDT model to identification outcomes only}
 
