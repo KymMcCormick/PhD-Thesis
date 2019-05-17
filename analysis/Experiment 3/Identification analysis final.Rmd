@@ -1,0 +1,381 @@
+---
+title: "Eyewitness identification data analysis"
+author: "Kym McCormick"
+date: "15 May 2019"
+output:
+  word_document: default
+---
+```{r setup, include=FALSE, results='hide'}
+
+knitr::opts_chunk$set(echo = TRUE)
+library("psych", lib.loc="~/R/win-library/3.5")
+library("tidyverse", lib.loc="~/R/win-library/3.5")
+library("MPTinR", lib.loc="~/R/win-library/3.5")
+setwd("C:/Users/mccormick/GitHub/PhD-Thesis")
+data <- read.csv("data/Experiment 3/experiment3data.csv")
+```
+
+```{r data wrangling}
+# Define lineup size and number of confidence level bins required
+n <- 8 #lineup size
+cbins <- 5
+
+# Extract required data from raw dataset
+din <- data %>%
+  # Select required variables ---
+  select(uid,
+         condition, 
+         Test_T1_suspectIdentified, 
+         confidence_rating, 
+         justification_justification,
+         demographics_age, 
+         demographics_gender, 
+         demographics_country)%>%
+  # Only include data from USA and includes a confidence rating ----
+  filter(demographics_country == "USA", !is.na(confidence_rating)) %>%
+  # Separate the confounded condition variable into separate variables ----
+  separate(condition,c("memory","expectation","target")) %>%
+  # Create boolean variables for each identification outcome ---
+  mutate(CID = if_else(target == "P" & Test_T1_suspectIdentified == "F68", 1, 0),
+         Miss = if_else(target == "P" & Test_T1_suspectIdentified == "Silhouette", 1, 0),
+         TPFoilID = if_else(target == "P" & Test_T1_suspectIdentified != "F68" & Test_T1_suspectIdentified != "Silhouette", 1, 0),
+         CR = if_else(target == "A" & Test_T1_suspectIdentified == "Silhouette", 1, 0),
+         TAFoilID = if_else(target == "A" & Test_T1_suspectIdentified != "Silhouette", 1, 0)
+         )
+
+# There are twice the number of target present lineups than target absent lineups. To rebalance this in a way that preserves the groupings of confidence intervals, I have chosen to double the Target Absent data before grouping into equal sized confidence rating bins. The following function does this and returns the data matrix with a new variable: decile.
+
+Con_Perc <- function(data) {
+  # Separate data into target present and absent dataframes ---
+  Ratings_Absent <- data %>% filter(target == "A")
+  Ratings_Present <- data %>% filter(target == "P")
+  # Bind back together, doubling up on the target absent group ---
+  # NOTE THAT DUPLICATES MAY BE REMOVED USING THE UID NUMBERS ---
+  Ratings <- rbind(Ratings_Absent,Ratings_Absent,Ratings_Present)
+  # Group chooser confidence into decile confidence rating bins
+  din_mod_choose <- Ratings %>%
+    filter(Test_T1_suspectIdentified != "Silhouette") %>%
+    mutate(c = ntile(confidence_rating,cbins)
+    )
+  # Group non-chooser confidence into a single zero confidence rating bin ---
+  din_mod_nochoose <- Ratings %>%
+    filter(Test_T1_suspectIdentified == "Silhouette") %>%
+    mutate(c = 0)
+  # Bind chooser and non-chooser data back together ---
+  din_mod <- rbind(din_mod_choose, din_mod_nochoose)
+  return(din_mod)
+}
+
+# Apply the above function to the cleaned dataset
+din_mod <- Con_Perc(din)
+
+# Check the grouping of the confidence rating deciles to ensure evenness
+din_mod %>%
+  select(c) %>%
+  map(~prop.table(table(.)))
+
+```
+
+
+##Demographics                        
+```{r demographics}
+
+age <- describe(din$demographics_age)
+age
+
+gender <- din %>% 
+  select(demographics_gender) %>% 
+  map(~prop.table(table(.)))
+gender
+```
+##Identification counts
+
+```{r Identification outcome counts}
+
+# Counts within each confidence level and accross manipulation groups ---
+obsData <- din_mod %>%
+  group_by(c) %>%
+  summarise(
+    CID = sum(CID),
+    TA = sum(CID)+sum(TPFoilID),
+    FA = sum(TPFoilID)
+    ) %>%
+  select (-c)
+
+# Reverse the order of the confidence level groups (from highest to lowest) ---
+obsData <- t(obsData[6:2,])
+
+# Calculate sums for non-identifications
+cZero <- din_mod %>%
+  filter(c == "0")%>%
+  summarise(
+    CID = 0,
+    TA = sum(Miss),
+    FA = sum(CR)
+  ) %>%
+  t()
+
+# Bind together into a matrix ---
+obsData <- as.matrix(cbind(obsData,cZero[,1]))
+obsData
+#obsData
+```
+
+```{r}
+# Strong memory observed counts
+obsData_S <- din_mod %>%
+  filter(memory == "S")%>%
+  group_by(c) %>%
+  summarise(
+    CID = sum(CID),
+    TA = sum(CID)+sum(TPFoilID),
+    FA = sum(TPFoilID)
+    ) %>%
+  select (-c)
+  
+obsData_S <- t(obsData_S[6:2,])
+
+cZero_S <- din_mod %>%
+  filter(c == "0", memory == "S") %>%
+  summarise(CID = 0, TA = sum(Miss), FA = sum(CR)) %>%
+  t()
+
+obsData_S <- as.matrix(cbind(obsData_S,cZero_S[,1]))
+obsData_S
+
+# Weak memory observed counts
+obsData_W <- din_mod %>%
+  filter(memory == "W")%>%
+  group_by(c) %>%
+  summarise(
+    CID = sum(CID),
+    TA = sum(CID)+sum(TPFoilID),
+    FA = sum(TPFoilID)
+    ) %>%
+  select (-c)
+  
+obsData_W <- t(obsData_W[6:2,])
+
+cZero_W <- din_mod %>%
+  filter(c == "0", memory == "W")%>%
+  summarise(CID = 0, TA = sum(Miss), FA = sum(CR)) %>%
+  t()
+
+obsData_W <- as.matrix(cbind(obsData_W,cZero_W[,1]))
+obsData_W
+```
+```{r}
+#Likelihood functions generate predicted data.
+#Given a particular set of parameters that define the likelihood surface, they give the most likely data
+
+#Definitions:
+#CID - target identification, i.e. selection of the target when the target is present
+#TA - target detection, i.e. selection of either a target or a foil when a target is present
+#FA - false alarm, i.e. selection of a foil when no target is present
+
+
+#Predicted proportion of Correct IDs according to MAX model
+QT <- function(c,d,s,n){
+  m <- function(x) dnorm(x,mean = d, sd = s)*pnorm(x)^(n-1)
+  p <- vector(mode = "integer", length = length(c))
+  for (i in 1:length(c)){
+    a <- integrate(m,c[i],15) 
+    p[i] <- a$value
+  }
+  return(p)
+}
+
+#predicted proportion of total detections on TP trials MAX model
+TP <- function(c,d,s,n){
+  p <- vector(mode = "integer", length = length(c))
+  for (i in 1:length(c)){
+    p[i] <- pnorm(((c[i])-d)/s)*pnorm(c[i])^(n-1)
+  }
+  p <- 1 - p
+  return(p)
+}
+
+#predicted proportion of total detections on TA trials MAX model
+TA <- function(c,n){
+  p = vector(mode = "integer", length = length(c))
+  for (i in 1:length(c)){
+    p[i] = pnorm(c[i])^n
+  }
+  p = 1 - p
+  return(p)
+}
+
+genpred <- function(pars, obs.data, n){
+  ## The variables below (c,d & s) are defined by pars, which are passed into the chisq function via "theta = x0" in the constrOptim function (see below)
+  c <- pars[1:(length(pars)-2)]
+  d <- pars[length(pars)-1]
+  s <- tail(pars,1)
+  
+  total.TP <- sum(obs.data[2,])
+  total.TA <- sum(obs.data[3,]) 
+  
+  CID <- QT(c(c, -15),d,s,n)
+  CID <- c(CID[1],diff(CID))
+  
+  TDTP <- c(TP(c,d,s,n),1)
+  TDTP <- c(TDTP[1],diff(TDTP))
+  
+  TDTA <- c(TA(c,n),1)
+  TDTA <- c(TDTA[1],diff(TDTA))
+  
+  CID <- CID*total.TP
+  TDTP <- TDTP*total.TP
+  TDTA <- TDTA*total.TA
+  
+  pred.data <- rbind(CID,TDTP,TDTA)
+  rownames(pred.data) <- c()
+  
+  return(pred.data)
+}
+
+#Chi-squared 
+
+chisq <- function(pars,obs.data,n){
+  
+  pred.data <- genpred(pars,obs.data,n)
+  lastcell <- ncol(obs.data)  
+  nc <- ncol(obs.data)-1
+  f <- vector(mode = "integer", length = nrow(obs.data)*ncol(obs.data)) #for storing and summing chi-sq fit value
+  
+  for (i in 1:nc){
+    
+    a <- pred.data[1,i] #Correct ID 
+    b <- obs.data[1,i]
+    f[1] <- f[1] + (b-a)^2/a
+    
+    a <- pred.data[2,i]-pred.data[1,i] #Foil ID on TP lineup 
+    b <- obs.data[2,i]-obs.data[1,i] 
+    f[2] = f[2] + (b-a)^2/a
+    
+    a <- pred.data[3,i] #False Alarm 
+    b <- obs.data[3,i]
+    f[3] <- f[3] + (b-a)^2/a
+  }
+  
+  a <- pred.data[2,lastcell] #Rejection TP
+  b <- obs.data[2,lastcell]
+  f[4] <- (b-a)^2/a
+  
+  a <- pred.data[3,lastcell] #Rejection TA
+  b <- obs.data[3,lastcell]
+  f[5] <- (b-a)^2/a
+  
+  f <- sum(f)
+  
+  return(f)  
+}
+
+#optimisation
+
+## Define starting values (also used as pars variable)
+x0 = c(5,4,3,2,1,1,1) #c1, c2, c3, c4, c5, d, s
+
+## Define contstraint matrix ---
+A <- cbind(
+  c(1,0,0,0),
+  c(-1,1,0,0),
+  c(0,-1,1,0),
+  c(0,0,-1,1),
+  c(0,0,0,-1),
+  c(0,0,0,0),
+  c(0,0,0,0) #added extra column for s parameter
+  ) 
+
+## Define constraint vector 
+b <- c(0,0,0,0)
+```
+# Estimate parameters from observed data 
+## Collapsed identification data
+```{r}
+out <- constrOptim(
+  theta = x0, ## passed into the chisq function as "pars"
+  f = chisq, 
+  grad = NULL, 
+  ui = A,     
+  ci = b, 
+  mu = 1e-04, 
+  method = "Nelder-Mead",  
+  outer.iterations = 100, 
+  obs.data = obsData, 
+  n = n
+  )
+
+#get fit statistic and parameters from model fit
+
+chisq.modelfit <- out$value
+c.modelfit <- out$par[1:(length(out$par)-2)]
+d.modelfit <- out$par[length(out$par)-1]
+s.modelfit <- tail(out$par,1)
+
+pred.data <- genpred(out$par, obsData, n)
+chisq.modelfit
+c.modelfit
+d.modelfit
+s.modelfit
+pred.data
+
+```
+## Strong memory identification data
+```{r strong memory}
+out <- constrOptim(
+  theta = x0, 
+  f = chisq, 
+  grad = NULL, 
+  ui = A, 
+  ci = b, 
+  mu = 1e-04, 
+  method = "Nelder-Mead",  
+  outer.iterations = 100, 
+  obs.data = obsData_S, 
+  n = n
+  )
+
+chisq.modelfit <- out$value
+c.modelfit <- out$par[1:(length(out$par)-2)]
+d.modelfit <- out$par[length(out$par)-1]
+s.modelfit <- tail(out$par,1)
+
+pred.data <- genpred(out$par, obsData_S, n)
+chisq.modelfit
+c.modelfit
+d.modelfit
+s.modelfit
+pred.data
+
+```
+## Weak memory identification data
+```{r weak memory}
+out <- constrOptim(
+  theta = x0, 
+  f = chisq, 
+  grad = NULL, 
+  ui = A, 
+  ci = b, 
+  mu = 1e-04, 
+  method = "Nelder-Mead",  
+  outer.iterations = 100, 
+  obs.data = obsData_W, 
+  n = n
+  )
+
+#get fit statistic and parameters from model fit
+
+chisq.modelfit <- out$value
+c.modelfit <- out$par[1:(length(out$par)-2)]
+d.modelfit <- out$par[length(out$par)-1]
+s.modelfit <- tail(out$par,1)
+
+pred.data_W <- genpred(out$par, obsData_W, n)
+chisq.modelfit
+c.modelfit
+d.modelfit
+s.modelfit
+pred.data_W
+
+```
+
