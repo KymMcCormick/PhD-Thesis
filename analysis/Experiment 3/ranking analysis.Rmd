@@ -13,10 +13,11 @@ knitr::opts_chunk$set(echo = TRUE)
 library("psych")
 library("tidyverse")
 library("MPTinR")
+library("readr")
 
-setwd("C:/Users/mccormick/GitHub/PhD-Thesis")
+setwd("C:/Users/User/Documents/Kym/PhD-Thesis")
 
-data <- read.csv("data/Experiment 3/experiment3data.csv")
+data <- read_csv("data/Experiment 3/Experiment3data.csv")
 
 
 ```
@@ -256,7 +257,8 @@ Rank_strong <- fit.mptinr(
 )
 
 Rank_strong$goodness.of.fit
-Rank_strong$parameters
+rank.strong.para <- Rank_strong$parameters%>%
+  select(estimates)
 ```
 
 Weak memory
@@ -273,12 +275,13 @@ Rank_weak <- fit.mptinr(
 )
 
 Rank_weak$goodness.of.fit
-Rank_weak$parameters
+rank.weak.para <- Rank_weak$parameters%>%
+  select(estimates)
 ```
 
 Combined
 ```{r, echo=FALSE}
-Rank_weak <- fit.mptinr(
+Rank_comb <- fit.mptinr(
   data = Rank_dvector[3,], 
   objective = SDTrank, 
   param.names = c("mu", "sigma"), 
@@ -289,6 +292,18 @@ Rank_weak <- fit.mptinr(
   starting.values = c(1,1)
 )
 
-Rank_weak$goodness.of.fit
-Rank_weak$parameters
+Rank_comb$goodness.of.fit
+rank.comb.para <- Rank_comb$parameters%>%
+  select(estimates)
+
 ```
+```{r}
+rank.para <- cbind(rank.weak.para,rank.comb.para,rank.strong.para)
+colnames(rank.para) <- c("weak", "combined", "strong")
+rank.para
+```
+
+```{r}
+
+```
+

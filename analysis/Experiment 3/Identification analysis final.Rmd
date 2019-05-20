@@ -8,11 +8,14 @@ output:
 ```{r setup, include=FALSE, results='hide'}
 
 knitr::opts_chunk$set(echo = TRUE)
-library("psych", lib.loc="~/R/win-library/3.5")
-library("tidyverse", lib.loc="~/R/win-library/3.5")
-library("MPTinR", lib.loc="~/R/win-library/3.5")
-setwd("C:/Users/mccormick/GitHub/PhD-Thesis")
-data <- read.csv("data/Experiment 3/experiment3data.csv")
+library("psych")
+library("tidyverse")
+library("MPTinR")
+library("readr")
+
+setwd("C:/Users/User/Documents/Kym/PhD-Thesis")
+
+data <- read_csv("data/Experiment 3/Experiment3data.csv")
 ```
 
 ```{r data wrangling}
@@ -94,35 +97,56 @@ gender
 
 # Counts within each confidence level and accross manipulation groups ---
 obsData <- din_mod %>%
+  filter(c != 0)%>%
   group_by(c) %>%
   summarise(
     CID = sum(CID),
     TA = sum(CID)+sum(TPFoilID),
     FA = sum(TPFoilID)
-    ) %>%
-  select (-c)
-
+    ) 
+obsData
 # Reverse the order of the confidence level groups (from highest to lowest) ---
-obsData <- t(obsData[6:2,])
 
 # Calculate sums for non-identifications
 cZero <- din_mod %>%
-  filter(c == "0")%>%
-  summarise(
-    CID = 0,
-    TA = sum(Miss),
-    FA = sum(CR)
-  ) %>%
-  t()
-
+  filter(c == "0") %>%
+  group_by(memory,c)
+  summarise(CID = 0, TA = sum(Miss), FA = sum(CR)) 
+cZero
 # Bind together into a matrix ---
-obsData <- as.matrix(cbind(obsData,cZero[,1]))
+obsData <- rbind(obsData,cZero)
+obsData$memory <- "All"
+obsData <- obsData[c(5,1:3)]
 obsData
-#obsData
 ```
 
 ```{r}
 # Strong memory observed counts
+obsData_M <- din_mod %>%
+  filter(c != 0)%>%
+  group_by(memory,c) %>%
+  summarise(
+    CID = sum(CID),
+    TA = sum(CID)+sum(TPFoilID),
+    FA = sum(TPFoilID)
+    ) 
+obsData_M
+
+cZero_M <- din_mod %>%
+  filter(c == "0") %>%
+  group_by(memory,c)%>%
+  summarise(CID = 0, TA = sum(Miss), FA = sum(CR)) 
+
+obsData_M <- rbind(obsData_M,cZero_M)
+#write.csv(obsData_M,"observedIDcounts.csv")
+
+obsData_S <- obsData_M %>%
+  filter(memory == "W")
+
+obsData_S
+```
+
+```{r}
 obsData_S <- din_mod %>%
   filter(memory == "S")%>%
   group_by(c) %>%
@@ -135,12 +159,12 @@ obsData_S <- din_mod %>%
   
 obsData_S <- t(obsData_S[6:2,])
 
-cZero_S <- din_mod %>%
-  filter(c == "0", memory == "S") %>%
+cZero_s <- din_mod %>%
+  filter(c == "0", memory == "S")%>%
   summarise(CID = 0, TA = sum(Miss), FA = sum(CR)) %>%
   t()
 
-obsData_S <- as.matrix(cbind(obsData_S,cZero_S[,1]))
+obsData_S <- as.matrix(cbind(obsData_S,cZero_s[,1]))
 obsData_S
 
 # Weak memory observed counts
@@ -163,7 +187,13 @@ cZero_W <- din_mod %>%
 
 obsData_W <- as.matrix(cbind(obsData_W,cZero_W[,1]))
 obsData_W
+
 ```
+
+```{r}
+
+```
+
 ```{r}
 #Likelihood functions generate predicted data.
 #Given a particular set of parameters that define the likelihood surface, they give the most likely data
@@ -290,7 +320,7 @@ A <- cbind(
 b <- c(0,0,0,0)
 ```
 # Estimate parameters from observed data 
-## Collapsed identification data
+## Combined identification data
 ```{r}
 out <- constrOptim(
   theta = x0, ## passed into the chisq function as "pars"
@@ -312,7 +342,7 @@ c.modelfit <- out$par[1:(length(out$par)-2)]
 d.modelfit <- out$par[length(out$par)-1]
 s.modelfit <- tail(out$par,1)
 
-pred.data <- genpred(out$par, obsData, n)
+pred.data.comb <- genpred(out$par, obsData, n)
 chisq.modelfit
 c.modelfit
 d.modelfit
@@ -340,7 +370,7 @@ c.modelfit <- out$par[1:(length(out$par)-2)]
 d.modelfit <- out$par[length(out$par)-1]
 s.modelfit <- tail(out$par,1)
 
-pred.data <- genpred(out$par, obsData_S, n)
+pred.data.strong <- genpred(out$par, obsData_S, n)
 chisq.modelfit
 c.modelfit
 d.modelfit
@@ -370,7 +400,7 @@ c.modelfit <- out$par[1:(length(out$par)-2)]
 d.modelfit <- out$par[length(out$par)-1]
 s.modelfit <- tail(out$par,1)
 
-pred.data_W <- genpred(out$par, obsData_W, n)
+pred.data.weak <- genpred(out$par, obsData_W, n)
 chisq.modelfit
 c.modelfit
 d.modelfit
