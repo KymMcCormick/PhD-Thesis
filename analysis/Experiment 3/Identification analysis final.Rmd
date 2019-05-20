@@ -8,11 +8,14 @@ output:
 ```{r setup, include=FALSE, results='hide'}
 
 knitr::opts_chunk$set(echo = TRUE)
-library("psych", lib.loc="~/R/win-library/3.5")
-library("tidyverse", lib.loc="~/R/win-library/3.5")
-library("MPTinR", lib.loc="~/R/win-library/3.5")
-setwd("C:/Users/mccormick/GitHub/PhD-Thesis")
-data <- read.csv("data/Experiment 3/experiment3data.csv")
+library("psych")
+library("tidyverse")
+library("MPTinR")
+library("readr")
+
+setwd("C:/Users/User/Documents/Kym/PhD-Thesis")
+
+data <- read_csv("data/Experiment 3/Experiment3data.csv")
 ```
 
 ```{r data wrangling}
