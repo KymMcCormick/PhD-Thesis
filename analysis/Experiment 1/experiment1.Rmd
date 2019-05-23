@@ -9,6 +9,7 @@ output: html_document
 
 knitr::opts_chunk$set(echo = TRUE)
 `results_20170720.(1)` <- read.csv("C:/Users/User/Downloads/results_20170720 (1).csv")
+library("tidyverse", lib.loc="C:/Program Files/R/R-3.5.3/library")
 ```
 
 ## R Markdown
@@ -33,10 +34,12 @@ dinExp1 <- `results_20170720.(1)` %>%
   separate(condition,c("memory","expectation","target")) %>%
   
 ## separate the ranking variable into separate columns ---
-  separate(Rank_T.1_order_final,c("Rank_1","Rank_2","Rank_3","Rank_4","Rank_5","Rank_6"))
+  separate(Rank_T.1_order_final,c("Rank_1","Rank_2","Rank_3","Rank_4","Rank_5","Rank_6"))%>%
+  mutate(c = ntile(confidence_rating,5))
+
 
 ## Create a column of counts --- There is probably an easier way to do this  
-din$n <- if_else(!is.na(din$demographics_country) == "USA",1,0)
+dinExp1$n <- if_else(!is.na(dinExp1$demographics_country) == "USA",1,0)
 
 
 ```
@@ -57,7 +60,7 @@ A <- dinExp1%>%
     "delete" = Rank_6
   ) %>%
   select(-delete)
-A <- A[c(1:4,11,5:10,12)]
+A <- A[c(1:4,11,5:10,12:14)]
 B <- dinExp1%>%
   filter(!is.na(Rank_6))%>%
   select(-Test_T.1_finalSelection)
@@ -123,7 +126,6 @@ You can also embed plots, for example:
 ```{r}
 obsData <- dinExp1 %>%
 filter(!is.na(confidence_rating)) %>%
-    )%>%
     mutate(CID = if_else(target == "P" & Test_T.1_finalSelection == "Target", 1, 0),
          Miss = if_else(target == "P" & Test_T.1_finalSelection == "Silhouette", 1, 0),
          TPFoilID = if_else(target == "P" & Test_T.1_finalSelection != "Target" & Test_T.1_finalSelection != "Silhouette", 1, 0),
@@ -146,10 +148,8 @@ obsData
 
 ```{r pressure}
 # Counts within each confidence level and accross manipulation groups ---
-obsData <- din %>%
+obsData <- dinExp1 %>%
 filter(Test_T.1_finalSelection != "Silhouette") %>%
-    mutate(c = ntile(confidence_rating,5)
-    )
   group_by(c) %>%
   summarise(
     CID = sum(CID),

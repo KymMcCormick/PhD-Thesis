@@ -110,7 +110,7 @@ obsData
 # Calculate sums for non-identifications
 cZero <- din_mod %>%
   filter(c == "0") %>%
-  group_by(memory,c)
+  group_by(memory,c) %>%
   summarise(CID = 0, TA = sum(Miss), FA = sum(CR)) 
 cZero
 # Bind together into a matrix ---

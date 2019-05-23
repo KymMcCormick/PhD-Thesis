@@ -30,7 +30,8 @@ din <- data %>%
          Rank_T1_selectionOrder, 
          demographics_age, 
          demographics_gender, 
-         demographics_country)%>%
+         demographics_country,
+         Test_T1_suspectIdentified)%>%
   
 ## Select data from USA only ----  
   filter(demographics_country == "USA", Rank_T1_selectionOrder != "") %>%
@@ -214,7 +215,7 @@ Cond_Cum_Rank
 
 ##Estimation of UV-SDT parameters
 
-Model
+UVSDT Model
 ```{r, Model}
 
 expSDTrank <- function(Q, param.names, n.params, tmp.env){
@@ -233,11 +234,35 @@ expSDTrank <- function(Q, param.names, n.params, tmp.env){
 }
 ```
 
+2HT Model
+```{r, Model}
+HighThrRank <- function(Q, param.names, n.params, tmp.env){
+  n <- 8
+  e <- vector("numeric", n)
+  r <- Q       # This is the detection parameter
+  for (ii in 1:n) {
+    ifelse(
+      ii == 1,
+      e[ii] <- r+((1-r)/n),
+      e[ii] <- (1-r)*(1/n)
+      )
+    }
+  return(e)
+}
+
+```
+
 Fitting function
 ```{r, Fitting function}
 
 SDTrank <- function(Q, data, param.names, n.params, tmp.env, lower.bound, upper.bound){
   e <- expSDTrank(Q, param.names, n.params, tmp.env)
+  LL <- -sum(data[data!=0]*log(e[data!=0]))
+  return(LL)
+}
+
+HTrank <- function(Q, data, param.names, n.params, tmp.env, lower.bound, upper.bound){
+  e <- HighThrRank(Q, param.names, n.params, tmp.env)
   LL <- -sum(data[data!=0]*log(e[data!=0]))
   return(LL)
   }
@@ -292,9 +317,30 @@ Rank_comb <- fit.mptinr(
   starting.values = c(1,1)
 )
 
+Rank_comb$information.criteria
 Rank_comb$goodness.of.fit
 rank.comb.para <- Rank_comb$parameters%>%
   select(estimates)
+
+```
+
+```{r}
+Rank_comb_HT <- fit.mptinr(
+  data = Rank_dvector[3,], 
+  objective = HTrank, 
+  param.names = c("r"), 
+  categories.per.type = 8, 
+  prediction = HighThrRank, 
+  lower.bound = 0, 
+  upper.bound = Inf,
+  starting.values = 0
+)
+
+Rank_comb_HT$information.criteria
+Rank_comb_HT$goodness.of.fit
+rank.comb.HT.para <- Rank_comb_HT$parameters%>%
+  select(estimates)
+rank.comb.HT.para
 
 ```
 ```{r}
@@ -303,7 +349,4 @@ colnames(rank.para) <- c("weak", "combined", "strong")
 rank.para
 ```
 
-```{r}
-
-```
 
