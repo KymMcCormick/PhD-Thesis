@@ -1,0 +1,317 @@
+---
+title: "Analysis of Eyewitness ranking data"
+author: "Kym McCormick"
+date: "15 May 2019"
+output:
+  word_document: default
+  pdf_document: default
+  html_notebook: default
+---
+```{r setup, include=FALSE, results='hide'}
+
+knitr::opts_chunk$set(echo = TRUE)
+
+
+library("psych")
+library("tidyverse")
+library("MPTinR")
+library("readr")
+
+setwd("C:/Users/User/Documents/Kym/PhD-Thesis")
+
+data <- read.csv("C:/Users/User/Downloads/results_20170720 (1).csv")
+
+
+```
+
+```{r data wrangling, echo=FALSE}
+## Select variables ----
+din <- data %>%
+  select(uid,
+         condition, 
+         Rank_T.1_order_final,
+         Test_T.1_finalSelection,
+         demographics_age, 
+         demographics_gender, 
+         demographics_country)%>%
+  
+## Select data from USA only ----  
+  filter(demographics_country == "USA", Rank_T.1_order_final != "") %>%
+
+## separate the condition variable into separate columns ---
+  separate(condition,c("memory","expectation", "target")) %>%
+  filter(target == "P")%>%
+  
+## separate the ranking variable into separate columns ---
+  separate(Rank_T.1_order_final,c("Rank_1","Rank_2","Rank_3","Rank_4","Rank_5","Rank_6"))
+
+din.Choose <- din%>%
+  filter(Test_T.1_finalSelection != "Silhouette")
+din.NoChoose <- din %>%
+  filter(Test_T.1_finalSelection == "Silhouette")
+
+## Create columns recording accuracy for each rank --- Again, there is probably a better way to do this
+din.Choose <- din.Choose %>%
+  mutate(R1_Corr = if_else(Test_T.1_finalSelection == "Target", 1, 0),
+         R2_Corr = if_else(Rank_1 == "Target", 1, 0),
+         R3_Corr = if_else(Rank_2 == "Target", 1, 0),
+         R4_Corr = if_else(Rank_3 == "Target", 1, 0),
+         R5_Corr = if_else(Rank_4 == "Target", 1, 0),
+         R6_Corr = if_else(Rank_5 == "Target", 1, 0)
+         )
+din.NoChoose <- din.NoChoose %>%
+  mutate(R1_Corr = if_else(Rank_1 == "Target", 1, 0),
+         R2_Corr = if_else(Rank_2 == "Target", 1, 0),
+         R3_Corr = if_else(Rank_3 == "Target", 1, 0),
+         R4_Corr = if_else(Rank_4 == "Target", 1, 0),
+         R5_Corr = if_else(Rank_5 == "Target", 1, 0),
+         R6_Corr = if_else(Rank_6 == "Target", 1, 0)
+         )
+din <- rbind(din.NoChoose,din.Choose)
+## Create a column of counts --- There is probably an easier way to do this  
+din$n <- if_else(!is.na(din$demographics_country) == "USA",1,0)
+
+
+```
+
+##Demographics                       
+```{r demographics, echo=FALSE}
+
+describe(din$demographics_age)
+
+demo <- din %>% 
+  select(demographics_gender) %>% 
+  map(~prop.table(table(.)))
+demo
+```
+
+##Counts of correct identifications within each rank position
+###Across different levels of memory
+```{r, ranking counts by memory}
+## Create a vector of rank counts ---
+Rank_dvector <- din %>% 
+  
+## Only include target present lineup data ---  
+  filter(target == "P") %>%
+  
+## Separate into levels of memory strength (High and Low) ---  
+  group_by(memory)%>%
+  
+## Sum the correct selection of the target across each rank postion ---  
+  summarise(r1 = sum(R1_Corr),
+            r2 = sum(R2_Corr),
+            r3 = sum(R3_Corr),
+            r4 = sum(R4_Corr),
+            r5 = sum(R5_Corr),
+            r6 = sum(R6_Corr)
+            ) %>% 
+  ungroup()%>%
+select(-memory) %>%
+
+## Return as a structured vector  
+  ## Return as a structured vector  
+  as.matrix() %>% 
+  as.vector %>%
+  structure(.Dim= c(2L,6L))
+```
+```{r, echo=FALSE}
+Rank_dvector
+
+```
+###Collapsed
+```{r, overall ranking counts}
+## Create a vector of rank counts ---
+Rank_dvector_collapsed <- din %>% 
+  
+## Only include target present lineup data ---  
+  filter(target == "P") %>%
+  
+## Sum the correct selection of the target across each rank postion ---  
+  summarise(r1 = sum(R1_Corr),
+            r2 = sum(R2_Corr),
+            r3 = sum(R3_Corr),
+            r4 = sum(R4_Corr),
+            r5 = sum(R5_Corr),
+            r6 = sum(R6_Corr)
+            ) %>% 
+
+## Return as a structured vector  
+  as.matrix() %>% 
+  as.vector %>%
+  structure(.Dim= c(1L,6L))
+
+## Bind the resulting vector to Rank_dvector
+Rank_dvector <- rbind(Rank_dvector,Rank_dvector_collapsed)
+```
+
+```{r, echo=FALSE}
+Rank_dvector
+```
+
+##Proportional correct 
+```{r}
+Rank_prop <- din  %>%
+  filter(target == "P")%>%
+  group_by(memory) %>%
+  summarise(Rank_1 = sum(R1_Corr)/sum(n),
+            Rank_2 = sum(R2_Corr)/sum(n),
+            Rank_3 = sum(R3_Corr)/sum(n),
+            Rank_4 = sum(R4_Corr)/sum(n),
+            Rank_5 = sum(R5_Corr)/sum(n),
+            Rank_6 = sum(R6_Corr)/sum(n),
+            n = n()
+            )
+  Rank_prop
+```
+
+```{r, echo=FALSE}
+  matplot(t(Rank_prop[,2:7]), type = "p", bty="l", pch=c(19,17), ylab = "Proportion Correct", xlab = "Rank position", ylim = 0:1)
+  legend("topleft", legend = c("Strong memory","Weak memory"),pch =c(19,17), col = c("black","red"), inset = .05)
+  box("plot")
+```
+##Conditional rank probabilities
+```{r}
+## Create a vector of conditional rank probabilities ---
+Cond_Cum_Rank <- din %>% 
+  
+## Only include target present lineup data ---  
+  filter(target == "P") %>%
+  
+## Separate into levels of memory strength (High and Low) ---  
+  group_by(memory)%>%
+  
+## Sum the correct selection of the target across each rank postion ---  
+  summarise(r1 = sum(R1_Corr),
+            r2 = sum(R2_Corr),
+            r3 = sum(R3_Corr),
+            r4 = sum(R4_Corr),
+            r5 = sum(R5_Corr),
+            r6 = sum(R6_Corr),
+            n = r1+r2+r3+r4+r5+r6
+            ) %>% 
+  
+## Calcluate conditional rank probabilities ---
+  mutate(c1 = r1/n,
+         c2 = r2/(n-r1),
+         c3 = r3/(n-r1-r2),
+         c4 = r4/(n-r1-r2-r3),
+         c5 = r5/(n-r1-r2-r3-r4),
+         c6 = r6/(n-r1-r2-r3-r4-r5)
+         ) %>%
+
+## Return as a structured vector  
+  select(-memory,-n) %>%
+  as.matrix() %>% 
+  as.vector %>%
+  structure(.Dim= c(2L,12L))
+
+## Remove ranking counts ---
+Cond_Cum_Rank <- Cond_Cum_Rank[,7:12]
+Cond_Cum_Rank
+
+```
+
+
+```{r}
+  matplot(t(Cond_Cum_Rank), type = "p", bty="l", pch=c(19,17), ylab = "Conditional Probability Correct", xlab = "Rank position")
+  legend("topleft", legend = c("Strong memory","Weak memory"),pch =c(19,17), col = c("black","red"), inset = .05)
+  box("plot")
+
+```
+
+
+##Estimation of UV-SDT parameters
+
+Model
+```{r, Model}
+
+expSDTrank <- function(Q, param.names, n.params, tmp.env){
+  n <- 6
+  e <- vector("numeric", n)
+  mu <- Q[1]
+  ss <- Q[2]
+  G <- function(x,i) {
+    (pnorm(x)^(n-i))*dnorm(x, mean = mu, sd = ss)*(1-pnorm(x))^(i-1)*choose(n-1, i-1)
+    }
+    
+  for (ii in 1:n) {
+    e[ii] <- integrate(G,-Inf,Inf,i = ii, rel.tol = .Machine$double.eps^0.5)$value
+    }
+  return(e)
+}
+```
+
+Fitting function
+```{r, Fitting function}
+
+SDTrank <- function(Q, data, param.names, n.params, tmp.env, lower.bound, upper.bound){
+  e <- expSDTrank(Q, param.names, n.params, tmp.env)
+  LL <- -sum(data[data!=0]*log(e[data!=0]))
+  return(LL)
+  }
+```
+###Results
+Strong memory
+```{r, echo=FALSE}
+Rank_strong <- fit.mptinr(
+  data = Cond_Cum_Rank[1,], 
+  objective = SDTrank, 
+  param.names = c("mu", "sigma"), 
+  categories.per.type = 6, 
+  prediction = expSDTrank, 
+  lower.bound = c(0,0.1), 
+  upper.bound = Inf,
+  starting.values = c(1,1)
+)
+
+Rank_strong$goodness.of.fit
+rank.strong.para <- Rank_strong$parameters%>%
+  select(estimates)
+```
+
+Weak memory
+```{r, echo=FALSE}
+Rank_weak <- fit.mptinr(
+  data = Cond_Cum_Rank[2,], 
+  objective = SDTrank, 
+  param.names = c("mu", "sigma"), 
+  categories.per.type = 6, 
+  prediction = expSDTrank, 
+  lower.bound = c(0,0.1), 
+  upper.bound = Inf,
+  starting.values = c(1,1)
+)
+
+Rank_weak$goodness.of.fit
+rank.weak.para <- Rank_weak$parameters%>%
+  select(estimates)
+```
+
+Combined
+```{r, echo=FALSE}
+Rank_comb <- fit.mptinr(
+  data = Rank_dvector[3,], 
+  objective = SDTrank, 
+  param.names = c("mu", "sigma"), 
+  categories.per.type = 6, 
+  prediction = expSDTrank, 
+  lower.bound = c(0,0.1), 
+  upper.bound = Inf,
+  starting.values = c(1,1)
+)
+
+Rank_comb$goodness.of.fit
+rank.comb.para <- Rank_comb$parameters%>%
+  select(estimates)
+
+```
+```{r}
+rank.para <- cbind(rank.weak.para,rank.comb.para,rank.strong.para)
+colnames(rank.para) <- c("weak", "combined", "strong")
+rank.para
+```
+
+```{r}
+
+```
+
