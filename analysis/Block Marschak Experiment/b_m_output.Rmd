@@ -3,8 +3,8 @@ title: "Testing eyewitness data against the Block-Marschak inequalities"
 author: "Kym McCormick"
 date: "3 May 2019"
 output:
-  word_document: default
   pdf_document: default
+  word_document: default
   html_notebook: default
 ---
 ```{r setup, include=FALSE, results='hide'}
