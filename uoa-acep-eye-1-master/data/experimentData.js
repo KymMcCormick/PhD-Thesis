@@ -51,8 +51,8 @@ targetPresence = function(cond) {
 
 COMMON_LINEUP_DATA = {
   // once a target video is chosen, ensure that the other two options have been commented out!!!!
-    target: {id: "F68", image: "images/F68.JPG", video: "amyY2Gck-8I"},  //original
-    //target: {id: "F68", image: "images/F68.JPG", video: "w23tuEgo96Q"}, //low res
+    //target: {id: "F68", image: "images/F68.JPG", video: "amyY2Gck-8I"},  //original
+    target: {id: "F68", image: "images/F68.JPG", video: "w23tuEgo96Q"}, //low res
     //target: {id: "F68", image: "images/F68.JPG", video: "pPIal4-U3hY"}, //low res with blur
 
     suspects: [
@@ -67,12 +67,12 @@ COMMON_LINEUP_DATA = {
     ],
 
     distractors: [
-        {id: "M164", image: "images/M164.JPG", video: "Pk2rVwtqFIY"},
-        {id: "M118", image: "images/M118.JPG", video: "Rr0Eom3ADZk"},
-        {id: "M086", image: "images/M086.JPG", video: "yipmIY2O0A8"},
-        {id: "M077", image: "images/M077.JPG", video: "LI2NvEN7114"},
-        {id: "M049", image: "images/M049.JPG", video: "zYz67-daobg"},
-        {id: "M048", image: "images/M048.JPG", video: "I1q9-R4xaJ0"}
+        {id: "M164", image: "", video: "Pk2rVwtqFIY"},
+        {id: "M118", image: "", video: "Rr0Eom3ADZk"},
+        {id: "M086", image: "", video: "yipmIY2O0A8"},
+        {id: "M077", image: "", video: "LI2NvEN7114"},
+        {id: "M049", image: "", video: "zYz67-daobg"},
+        {id: "M048", image: "", video: "I1q9-R4xaJ0"}
     ],
 
     silhouette: {id: "Silhouette", image: "images/neutral-silhouette.png"},
