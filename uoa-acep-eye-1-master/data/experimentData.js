@@ -20,18 +20,19 @@
 // ensure that the ratio of target present : absent  = 2 : 1
 
 CONDITIONS = [
-    "S_H_P",  // Strong, High, Present
-    "S_H_A",  // Strong, High, Absent
-    "S_L_P",  // Strong, Low, Present
-    "S_L_A",  // Strong, Low, Absent
+  // I have commented out all of the strong groups for the collection of weak data only due to a poor effect of the previous memory trace strength manipulation
+   // "S_H_P",  // Strong, High, Present
+   // "S_H_A",  // Strong, High, Absent
+   // "S_L_P",  // Strong, Low, Present
+   // "S_L_A",  // Strong, Low, Absent
     "W_H_P",  // Weak, High, Present
     "W_H_A",  // Weak, High, Absent
     "W_L_P",  // Weak, Low, Present
     "W_L_A",  // Weak, Low, Absent
 
     // Repeats to ensure *_*_P : *_*_A = 2 : 1
-    "S_H_P",  // Strong, High, Present
-    "S_L_P",  // Strong, Low, Present
+   // "S_H_P",  // Strong, High, Present
+   // "S_L_P",  // Strong, Low, Present
     "W_H_P",  // Weak, High, Present
     "W_L_P"  // Weak, Low, Present
 ].shuffle();
@@ -49,55 +50,34 @@ targetPresence = function(cond) {
 };
 
 COMMON_LINEUP_DATA = {
-    target: {id: "F68", image: "images/F68.JPG", video: "amyY2Gck-8I"},
+  // once a target video is chosen, ensure that the other two options have been commented out!!!!
+    //target: {id: "F68", image: "images/F68.JPG", video: "amyY2Gck-8I"},  //original
+    target: {id: "F68", image: "images/F68.JPG", video: "w23tuEgo96Q"}, //low res
+    //target: {id: "F68", image: "images/F68.JPG", video: "pPIal4-U3hY"}, //low res with blur
 
     suspects: [
-        //{id: "F2", image: "images/F2.JPG", video: "MISSING"},
-        //{id: "F20", image: "images/F20.JPG", video: "OQ_-4voFB60"},
-        //{id: "F23", image: "images/F23.JPG", video: "jqZImwmfPvI"},
         {id: "F34", image: "images/F34.JPG", video: "pS3LLcjT214"},
         {id: "F50", image: "images/F50.JPG", video: "" },
-
         {id: "F71", image: "images/F71.JPG", video: "37acYutPvg0"},
-        //{id: "F73", image: "images/F73.JPG", video: "7rJW-AGmnFQ"},
         {id: "F88", image: "images/F88.JPG", video: "VKENCZZ-eH0"},
-        //{id: "F99", image: "images/F99.JPG", video: "lI7YgHZ4XYM"},
-        //{id: "F114", image: "images/F114.JPG", video: "jB9r1xv27hA"},
-        //{id: "F119", image: "images/F119.JPG", video: "5JAY-tR7vjA"},
-        //{id: "F132", image: "images/F132.JPG", video: "fabaRlWuo54"},
         {id: "F134", image: "images/F134.JPG", video: "BvbNBVEkG60"},
         {id: "F147", image: "images/F147.JPG", video: "Cqs6t2o2vE4"},
-        //{id: "F154", image: "images/F154.JPG", video: "TtWemtgZgLs"},
         {id: "F176", image: "images/F176.JPG", video: "DW71Df7iFtg"},
         {id: "F177", image: "images/F177.JPG", video: "lut93__iLXQ"}
     ],
 
     distractors: [
-        //{id: "F2", image: "images/F2.JPG", video: "MISSING"},
-        //{id: "F20", image: "images/F20.JPG", video: "OQ_-4voFB60"},
-        {id: "F23", image: "images/F23.JPG", video: "jqZImwmfPvI"},
-        //{id: "F34", image: "images/F34.JPG", video: "pS3LLcjT214"},
-        //{id: "F50", image: "images/F50.JPG", video: "" },
-
-        //{id: "F71", image: "images/F71.JPG", video: "37acYutPvg0"},
-        {id: "F73", image: "images/F73.JPG", video: "7rJW-AGmnFQ"},
-        //{id: "F88", image: "images/F88.JPG", video: "VKENCZZ-eH0"},
-        {id: "F99", image: "images/F99.JPG", video: "lI7YgHZ4XYM"},
-        {id: "F114", image: "images/F114.JPG", video: "jB9r1xv27hA"},
-        {id: "F119", image: "images/F119.JPG", video: "5JAY-tR7vjA"},
-        {id: "F132", image: "images/F132.JPG", video: "fabaRlWuo54"},
-        //{id: "F134", image: "images/F134.JPG", video: "BvbNBVEkG60"},
-        //{id: "F147", image: "images/F147.JPG", video: "Cqs6t2o2vE4"},
-        {id: "F154", image: "images/F154.JPG", video: "TtWemtgZgLs"},
-        //{id: "F176", image: "images/F176.JPG", video: "DW71Df7iFtg"},
-        //{id: "F177", image: "images/F177.JPG", video: "lut93__iLXQ"}
+        {id: "M164", image: "", video: "Pk2rVwtqFIY"},
+        {id: "M118", image: "", video: "Rr0Eom3ADZk"},
+        {id: "M086", image: "", video: "yipmIY2O0A8"},
+        {id: "M077", image: "", video: "LI2NvEN7114"},
+        {id: "M049", image: "", video: "zYz67-daobg"},
+        {id: "M048", image: "", video: "I1q9-R4xaJ0"}
     ],
 
     silhouette: {id: "Silhouette", image: "images/neutral-silhouette.png"},
 
     lineupSize: 8
-    // 2, 133
-    // 2,34,50,68,71,73,88,114,132,133,134,147,176,177
 
 };
 
