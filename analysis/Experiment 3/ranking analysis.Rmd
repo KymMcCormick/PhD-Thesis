@@ -17,30 +17,37 @@ library("readr")
 
 setwd("C:/Users/User/Documents/Kym/PhD-Thesis")
 
-data <- read_csv("data/Experiment 3/Experiment3data.csv")
-
+data <- read_csv("data/Experiment 3/RawDataAugust2019 (2).csv")
 
 ```
 
 ```{r data wrangling, echo=FALSE}
 ## Select variables ----
+data <- data[-c(2046,2427),]
+
 din <- data %>%
   select(uid,
+         date,
          condition, 
+         Rank_T1_lineupOrder,
          Rank_T1_selectionOrder, 
          demographics_age, 
          demographics_gender, 
          demographics_country,
-         Test_T1_suspectIdentified)%>%
-  
+         Test_T1_suspectIdentified,
+         confidence_rating,
+         justification_justification)%>%
+
 ## Select data from USA only ----  
   filter(demographics_country == "USA", Rank_T1_selectionOrder != "") %>%
 
 ## separate the condition variable into separate columns ---
   separate(condition,c("memory","expectation","target")) %>%
-  
+
 ## separate the ranking variable into separate columns ---
   separate(Rank_T1_selectionOrder,c("Rank_1","Rank_2","Rank_3","Rank_4","Rank_5","Rank_6","Rank_7","Rank_8"))%>%
+  
+  drop_na()%>%
 
 ## Create columns recording accuracy for each rank --- Again, there is probably a better way to do this
   mutate(R1_Corr = if_else(target == "P" & Rank_1 == "F68", 1, 0),
@@ -55,6 +62,13 @@ din <- data %>%
 
 ## Create a column of counts --- There is probably an easier way to do this  
 din$n <- if_else(!is.na(din$demographics_country) == "USA",1,0)
+
+## Convert date to correct format ---
+din$date <- as.Date(din$date,"%Y-%m-%d")
+ 
+## Convert memory condition to the correct level (to correct error in recording on 2019-08-07) 
+din$memory <- ifelse(din$date == "2019-08-07" , "VW", din$memory)
+
 
 
 ```
@@ -78,8 +92,8 @@ Rank_dvector <- din %>%
   
 ## Only include target present lineup data ---  
   filter(target == "P") %>%
-  
-## Separate into levels of memory strength (High and Low) ---  
+
+## Separate into levels of memory strength (Strong, Weak, and Very Weak) ---  
   group_by(memory)%>%
   
 ## Sum the correct selection of the target across each rank postion ---  
@@ -91,13 +105,13 @@ Rank_dvector <- din %>%
             r6 = sum(R6_Corr),
             r7 = sum(R7_Corr),
             r8 = sum(R8_Corr)
-            ) %>% 
+            )  %>%
 
 ## Return as a structured vector  
   select(-memory) %>%
   as.matrix() %>% 
   as.vector %>%
-  structure(.Dim= c(2L,8L))
+  structure(.Dim= c(3L,8L))
 ```
 ```{r, echo=FALSE}
 Rank_dvector
@@ -110,7 +124,7 @@ Rank_dvector_collapsed <- din %>%
   
 ## Only include target present lineup data ---  
   filter(target == "P") %>%
-  
+
 ## Sum the correct selection of the target across each rank postion ---  
   summarise(r1 = sum(R1_Corr),
             r2 = sum(R2_Corr),
@@ -155,7 +169,7 @@ Rank_prop <- din  %>%
 
 ```{r, echo=FALSE}
   matplot(t(Rank_prop[,2:9]), type = "p", bty="l", pch=c(19,17), ylab = "Proportion Correct", xlab = "Rank position", ylim = 0:1)
-  legend("topleft", legend = c("Strong memory","Weak memory"),pch =c(19,17), col = c("black","red"), inset = .05)
+  legend("topleft", legend = c("Strong memory", "very weak memory","Weak memory"),pch =c(19,17), col = c("black","red", "green"), inset = .05)
   box("plot")
 ```
 ##Conditional rank probabilities
@@ -196,7 +210,7 @@ Cond_Cum_Rank <- din %>%
   select(-memory,-n) %>%
   as.matrix() %>% 
   as.vector %>%
-  structure(.Dim= c(2L,16L))
+  structure(.Dim= c(3L,16L))
 
 ## Remove ranking counts ---
 Cond_Cum_Rank <- Cond_Cum_Rank[,9:16]
@@ -207,7 +221,7 @@ Cond_Cum_Rank
 
 ```{r}
   matplot(t(Cond_Cum_Rank), type = "p", bty="l", pch=c(19,17), ylab = "Conditional Probability Correct", xlab = "Rank position")
-  legend("topleft", legend = c("Strong memory","Weak memory"),pch =c(19,17), col = c("black","red"), inset = .05)
+  legend("topleft", legend = c("Strong memory", "Very weak memory","Weak memory"),pch =c(19,17), col = c("black","red", "green"), inset = .05)
   box("plot")
 
 ```
@@ -289,7 +303,7 @@ rank.strong.para <- Rank_strong$parameters%>%
 Weak memory
 ```{r, echo=FALSE}
 Rank_weak <- fit.mptinr(
-  data = Rank_dvector[2,], 
+  data = Rank_dvector[3,], 
   objective = SDTrank, 
   param.names = c("mu", "sigma"), 
   categories.per.type = 8, 
@@ -306,8 +320,25 @@ rank.weak.para <- Rank_weak$parameters%>%
 
 Combined
 ```{r, echo=FALSE}
+Rank_veryWeak <- fit.mptinr(
+  data = Rank_dvector[2,], 
+  objective = SDTrank, 
+  param.names = c("mu", "sigma"), 
+  categories.per.type = 8, 
+  prediction = expSDTrank, 
+  lower.bound = c(0,0.1), 
+  upper.bound = Inf,
+  starting.values = c(1,1)
+)
+
+Rank_veryWeak$goodness.of.fit
+rank.veryWeak.para <- Rank_veryWeak$parameters%>%
+  select(estimates)
+```
+
+```{r, echo=FALSE}
 Rank_comb <- fit.mptinr(
-  data = Rank_dvector[3,], 
+  data = Rank_dvector[4,], 
   objective = SDTrank, 
   param.names = c("mu", "sigma"), 
   categories.per.type = 8, 
@@ -326,7 +357,7 @@ rank.comb.para <- Rank_comb$parameters%>%
 
 ```{r}
 Rank_comb_HT <- fit.mptinr(
-  data = Rank_dvector[3,], 
+  data = Rank_dvector[4,], 
   objective = HTrank, 
   param.names = c("r"), 
   categories.per.type = 8, 
@@ -344,8 +375,8 @@ rank.comb.HT.para
 
 ```
 ```{r}
-rank.para <- cbind(rank.weak.para,rank.comb.para,rank.strong.para)
-colnames(rank.para) <- c("weak", "combined", "strong")
+rank.para <- cbind(rank.veryWeak.para, rank.weak.para, rank.comb.para, rank.strong.para)
+colnames(rank.para) <- c("veryWeak","weak", "combined", "strong")
 rank.para
 ```
 
