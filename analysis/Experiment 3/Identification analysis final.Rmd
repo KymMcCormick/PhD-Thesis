@@ -13,7 +13,7 @@ library("tidyverse")
 library("MPTinR")
 library("readr")
 
-setwd("C:/Users/User/Documents/Kym/PhD-Thesis")
+setwd("C:/Users/mccormick/Documents/GitHub/PhD-Thesis") #notebook computer
 
 data <- read_csv("data/Experiment 3/RawDataAugust2019 (2).csv")
 ```
@@ -29,6 +29,7 @@ din <- data %>%
   select(uid,
          date,
          condition, 
+         date,
          Test_T1_suspectIdentified, 
          confidence_rating, 
          justification_justification,
@@ -46,6 +47,13 @@ din <- data %>%
          CR = if_else(target == "A" & Test_T1_suspectIdentified == "Silhouette", 1, 0),
          TAFoilID = if_else(target == "A" & Test_T1_suspectIdentified != "Silhouette", 1, 0)
          )
+    ## Convert date to correct format ---
+  din$date <- as.Date(din$date,"%Y-%m-%d")
+   
+  ## Convert memory condition to the correct level (to correct error in recording on 2019-08-07) 
+  din$memory <- ifelse(din$date == "2019-08-07" , "VW", din$memory)
+
+
 
 ## Convert date to correct format ---
 din$date <- as.Date(din$date,"%Y-%m-%d")
@@ -122,8 +130,14 @@ cZero <- din_mod %>%
 cZero
 # Bind together into a matrix ---
 obsData <- rbind(obsData,cZero)
+<<<<<<< HEAD
 #obsData$memory <- "All"
 #obsData <- obsData[c(5,1:3)]
+=======
+obsData
+obsData$memory <- "All"
+obsData <- obsData[c(5,1:4)]
+>>>>>>> d23d650b6bf115f74966ce86fcfb92b042992e42
 obsData
 ```
 
@@ -174,7 +188,11 @@ cZero_s <- din_mod %>%
 obsData_S <- as.matrix(cbind(obsData_S,cZero_s[,1]))
 obsData_S
 
+<<<<<<< HEAD
 # very Weak memory observed counts
+=======
+# Very Weak memory observed counts
+>>>>>>> d23d650b6bf115f74966ce86fcfb92b042992e42
 obsData_VW <- din_mod %>%
   filter(memory == "VW")%>%
   group_by(c) %>%
@@ -385,8 +403,13 @@ s.modelfit
 pred.data.strong
 
 ```
+<<<<<<< HEAD
 ## Weak memory identification data
 ```{r very weak memory}
+=======
+## Very Weak memory identification data
+```{r weak memory}
+>>>>>>> d23d650b6bf115f74966ce86fcfb92b042992e42
 out <- constrOptim(
   theta = x0, 
   f = chisq, 
@@ -407,12 +430,20 @@ c.modelfit <- out$par[1:(length(out$par)-2)]
 d.modelfit <- out$par[length(out$par)-1]
 s.modelfit <- tail(out$par,1)
 
+<<<<<<< HEAD
 pred.data.very.weak <- genpred(out$par, obsData_VW, n)
+=======
+pred.data.VW <- genpred(out$par, obsData_VW, n)
+>>>>>>> d23d650b6bf115f74966ce86fcfb92b042992e42
 chisq.modelfit
 c.modelfit
 d.modelfit
 s.modelfit
+<<<<<<< HEAD
 pred.data.very.weak
+=======
+pred.data_VW
+>>>>>>> d23d650b6bf115f74966ce86fcfb92b042992e42
 
 ```
 

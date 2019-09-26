@@ -287,46 +287,162 @@ ciPlot <- ggplot(ciWVW,aes(x = Rank, y = ci))+
   geom_point(shape = 1, size = 3) +
   geom_line(data = ciS, linetype = 1)+
   geom_point(data = ciS, shape = 16, size = 3)+
+  ylab("Conditional Accuracy")+
   theme_bw() +
   theme(panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
+        axis.title.y = element_text(size=12),
+        axis.title.x = element_text(size=12),
         strip.text.x = element_text(size=12),
-        strip.background = element_rect(colour="black", fill=("0")),
-        legend.position = "bottom") +
+        strip.background = element_rect(colour="black", fill=("0"))
+        ) +
+
   scale_x_continuous(breaks = scales::pretty_breaks(n = 6)) + 
   scale_y_continuous(breaks = scales::pretty_breaks(n = 10))+
-  facet_grid(.~Memory, labeller=labeller(Memory = labels))
+  facet_grid(.~Memory, labeller=labeller(Memory = labels))+ 
+  theme(aspect.ratio = 1)
 
 ciPlot
 
-svg("ciPlot.svg")
+svg("C:/Users/User/Documents/Kym/PhD-Thesis/analysis/Experiment 3/ciPlot.svg")
 print(ciPlot)       # Plot 1 --> in the first page of PDF
+#print(myplot2)     # Plot 2 ---> in the second page of the PDF
+dev.off() 
+
+pdf("C:/Users/User/Documents/Kym/PhD-Thesis/analysis/Experiment 3/ciPlot.pdf")
+print(ciPlot)       # Plot 1 --> in the first page of PDF
+#print(myplot2)     # Plot 2 ---> in the second page of the PDF
+dev.off() 
+```
+
+
+
+
+Setting up ranking to look at between choosers and non-choosers
+```{r}
+Choosing <- din %>%
+  select(memory, expectation, target, R1_Corr, R2_Corr, R3_Corr, R4_Corr, R5_Corr, R6_Corr, R7_Corr, R8_Corr, Test_T1_suspectIdentified)%>%
+  mutate(choose = if_else(Test_T1_suspectIdentified != "Silhouette", 1, 0))
+  
+## Create a vector of conditional rank probabilities ---
+Choosing <- Choosing %>% 
+  
+## Only include target present lineup data ---  
+  filter(target == "P") %>%
+  
+## Separate into levels of memory strength (High and Low) ---  
+  group_by(choose, memory)%>%
+## Sum the correct selection of the target across each rank postion ---  
+  summarise(r1 = sum(R1_Corr),
+            r2 = sum(R2_Corr),
+            r3 = sum(R3_Corr),
+            r4 = sum(R4_Corr),
+            r5 = sum(R5_Corr),
+            r6 = sum(R6_Corr),
+            r7 = sum(R7_Corr),
+            r8 = sum(R8_Corr),
+            n = r1+r2+r3+r4+r5+r6+r7+r8
+            ) %>% 
+## Calcluate conditional rank probabilities ---
+  mutate(c1 = r1/n,
+         c2 = r2/(n-r1),
+         c3 = r3/(n-r1-r2),
+         c4 = r4/(n-r1-r2-r3),
+         c5 = r5/(n-r1-r2-r3-r4),
+         c6 = r6/(n-r1-r2-r3-r4-r5),
+         c7 = r7/(n-r1-r2-r3-r4-r5-r6),
+         c8 = r8/(r8)
+         ) 
+Choosing
+
+## Create a dataframe from above for use in ggplot
+StrongChoose <- as.data.frame(t(Choosing[4,12:19]))
+StrongChoose$Rank <- c(1:8)
+StrongChoose$Memory <- c(rep("Strong",2))
+StrongChoose$Choose <- c(rep("Identify",2))
+
+StrongNoChoose <- as.data.frame(t(Choosing[1,12:19]))
+StrongNoChoose$Rank <- c(1:8)
+StrongNoChoose$Memory <- c(rep("Strong",2))
+StrongNoChoose$Choose <- c(rep("Reject",2))
+
+WeakChoose <- as.data.frame(t(Choosing[6,12:19]))
+WeakChoose$Rank <- c(1:8)
+WeakChoose$Memory <- c(rep("Weak",2))
+WeakChoose$Choose <- c(rep("Identify",2))
+
+WeakNoChoose <- as.data.frame(t(Choosing[3,12:19]))
+WeakNoChoose$Rank <- c(1:8)
+WeakNoChoose$Memory <- c(rep("Weak",2))
+WeakNoChoose$Choose <- c(rep("Reject",2))
+
+VeryWeakChoose <- as.data.frame(t(Choosing[4,12:19]))
+VeryWeakChoose$Rank <- c(1:8)
+VeryWeakChoose$Memory <- c(rep("Very Weak",2))
+VeryWeakChoose$Choose <- c(rep("Identify",2))
+
+VeryWeakNoChoose <- as.data.frame(t(Choosing[2,12:19]))
+VeryWeakNoChoose$Rank <- c(1:8)
+VeryWeakNoChoose$Memory <- c(rep("Very Weak",2))
+VeryWeakNoChoose$Choose <- c(rep("Reject",2))
+
+ciChoose <- rbind(StrongChoose,StrongNoChoose,WeakChoose,WeakNoChoose,VeryWeakChoose,VeryWeakNoChoose)
+
+ciChoose <- ciChoose %>%
+  rename(ci = V1)
+ciChoose
+
+## Create a structured vector
+Choosing <- Choosing %>%
+  ungroup()%>%
+  select(-choose,-memory,-n) %>%
+  as.matrix() %>%
+  as.vector() %>%
+  structure(.Dim = c(6L,16L))
+
+Choosing <- Choosing[,9:16]
+Choosing
+
+
+```
+Plot by choosers and memory
+```{r}
+labels <- c(Strong = "Normal","Very Weak" = "Degraded encoding", Weak = "Interference")
+
+ciChoosePlot <- ggplot(ciChoose,aes(x = Rank, y = ci))+
+  geom_line(data = ciS, linetype = 1, color = "light grey")+
+  geom_point(data = ciS, shape = 16, size = 3, color = "light grey")+
+  geom_line(linetype = 1) +
+  geom_point(shape = 16, size = 3) +
+  ylab("Conditional Accuracy")+
+  theme_bw() +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.title.y = element_text(size=12),
+        axis.title.x = element_text(size=12),
+        strip.text = element_text(size=12),
+        strip.background = element_rect(colour="black", fill=("0"))
+        ) +
+
+  scale_x_continuous(breaks = scales::pretty_breaks(n = 6)) + 
+  scale_y_continuous(breaks = scales::pretty_breaks(n = 10))+
+  facet_grid(Choose~Memory, labeller=labeller(Memory = labels)) + 
+  theme(aspect.ratio = 1)
+
+ciChoosePlot
+
+svg("C:/Users/User/Documents/Kym/PhD-Thesis/analysis/Experiment 3/ciChoosePlot.svg")
+print(ciChoosePlot)       # Plot 1 --> in the first page of PDF
+#print(myplot2)     # Plot 2 ---> in the second page of the PDF
+dev.off() 
+
+pdf("C:/Users/User/Documents/Kym/PhD-Thesis/analysis/Experiment 3/ciChoosePlot.pdf")
+print(ciChoosePlot)       # Plot 1 --> in the first page of PDF
 #print(myplot2)     # Plot 2 ---> in the second page of the PDF
 dev.off() 
 
 ```
 
-```{r}
-## Return as a structured vector  
-Cond_Cum_Rank <- Cond_Cum_R %>%
-  select(-memory,-n) %>%
-  as.matrix() %>% 
-  as.vector %>%
-  structure(.Dim= c(3L,12L))
-
-## Remove ranking counts ---
-Cond_Cum_Rank <- Cond_Cum_Rank[,7:12]
-Cond_Cum_Rank
-
-```
-
-
-```{r}
-  matplot(t(Cond_Cum_Rank), type = "p", bty="l", pch=c(19,17), ylab = "Conditional Probability Correct", xlab = "Rank position")
-  legend("topleft", legend = c("Strong memory","Weak memory"),pch =c(19,17), col = c("black","red"), inset = .05)
-  box("plot")
-
-```
 
 
 ##Estimation of UV-SDT parameters
@@ -338,9 +454,9 @@ expSDTrank <- function(Q, param.names, n.params, tmp.env){
   n <- 8
   e <- vector("numeric", n)
   mu <- Q[1]
-  ss <- Q[2]
+ # ss <- Q[2]
   G <- function(x,i) {
-    (pnorm(x)^(n-i))*dnorm(x, mean = mu, sd = ss)*(1-pnorm(x))^(i-1)*choose(n-1, i-1)
+    (pnorm(x)^(n-i))*dnorm(x, mean = mu, sd = 1)*(1-pnorm(x))^(i-1)*choose(n-1, i-1)
     }
     
   for (ii in 1:n) {
@@ -363,7 +479,26 @@ SDTrank <- function(Q, data, param.names, n.params, tmp.env, lower.bound, upper.
 Strong memory
 ```{r, echo=FALSE}
 Rank_strong <- fit.mptinr(
-  data = Cond_Cum_Rank[1,], 
+  data = Cond_Cum_RV[1,], 
+  objective = SDTrank, 
+  param.names = c("mu"), 
+  categories.per.type = 8, 
+  prediction = expSDTrank, 
+  lower.bound = c(0), 
+  upper.bound = Inf,
+  starting.values = c(1)
+)
+
+Rank_strong$goodness.of.fit
+rank.strong.para <- Rank_strong$parameters%>%
+  select(estimates)
+rank.strong.para
+```
+
+Weak memory
+```{r, echo=FALSE}
+Rank_weak <- fit.mptinr(
+  data = Cond_Cum_RV[3,], 
   objective = SDTrank, 
   param.names = c("mu", "sigma"), 
   categories.per.type = 8, 
@@ -373,27 +508,29 @@ Rank_strong <- fit.mptinr(
   starting.values = c(1,1)
 )
 
-Rank_strong$goodness.of.fit
-rank.strong.para <- Rank_strong$parameters%>%
+Rank_weak$goodness.of.fit
+rank.weak.para <- Rank_weak$parameters%>%
   select(estimates)
+rank.weak.para
 ```
-
-Weak memory
+Very Weak memory
 ```{r, echo=FALSE}
-Rank_weak <- fit.mptinr(
-  data = Cond_Cum_Rank[2,], 
+Rank_Very_weak <- fit.mptinr(
+  data = Cond_Cum_RV[2,], 
   objective = SDTrank, 
   param.names = c("mu", "sigma"), 
-  categories.per.type = 6, 
+  categories.per.type = 8, 
   prediction = expSDTrank, 
   lower.bound = c(0,0.1), 
   upper.bound = Inf,
   starting.values = c(1,1)
 )
 
-Rank_weak$goodness.of.fit
-rank.weak.para <- Rank_weak$parameters%>%
-  select(estimates)
+Rank_Very_weak$goodness.of.fit
+rank.very.weak.para <- Rank_Very_weak$parameters
+#%>%   select(estimates)
+
+rank.very.weak.para
 ```
 
 Combined
@@ -402,7 +539,7 @@ Rank_comb <- fit.mptinr(
   data = Rank_dvector[3,], 
   objective = SDTrank, 
   param.names = c("mu", "sigma"), 
-  categories.per.type = 6, 
+  categories.per.type = 8, 
   prediction = expSDTrank, 
   lower.bound = c(0,0.1), 
   upper.bound = Inf,
