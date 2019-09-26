@@ -1,0 +1,386 @@
+#main {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+    min-width: 1024;
+    min-height: 600;
+}
+
+.trialContainer {
+    /* background-color: #808080; */
+    width: 100%;
+    max-width: 1024;
+    max-height: 720;
+    /* height: 100%; */
+}
+
+.trialContainer.distractor {
+    max-width: 1024;
+    max-height: 720;
+}
+
+#studyTrialPanel #p1,
+#distractorTrialPanel .instructionsPage,
+#testTrialPanel .instructionsPage
+{
+    width: 600px;
+    flex-wrap: wrap;
+}
+
+/*
+.trialContainer.testTrial {
+    width: 600;
+}
+*/
+
+.trialContainer#finishPage {
+    width: 800;
+}
+
+.col1-4 {
+    width: 200px;
+    min-width: 180px;
+}
+
+.col2-4 {
+    width: 360px;
+}
+
+.col1-3 {
+    width: 240px;
+}
+
+.trialHeader {
+    padding: 10px;
+    border-bottom: 1px solid #747474;
+}
+
+.trialFooter {
+    padding: 10px;
+    border-top: 1px solid #747474;
+    text-align: right;
+}
+
+.contextText {
+    margin: 0px;
+}
+
+#stageText {
+    float: right;
+    opacity: 0.6;
+}
+
+#reminderText {
+    opacity: 0.6;
+}
+
+.questionText {
+    padding-top: 6px;
+}
+
+.panel {
+    border: 1px solid rgba(0,0,0,0.2);
+    border-radius: 6px;
+    box-shadow: 0 3px 9px rgba(0,0,0,0.5);
+    -webkit-box-shadow: 0 3px 9px rgba(0,0,0,0.5);
+    background-color: #d5d5d5;
+}
+
+.trialBody {
+    padding: 0px;
+}
+
+#contentPanel {
+    padding: 5px;
+}
+
+textarea.error {
+    border-color: red;
+}
+
+.modal-dialog.consent {
+    width: 65vw;
+}
+
+.modal-dialog.distractor {
+    width: 65vw;
+}
+
+.distractor-input-col {
+    margin-top: 5px;
+}
+
+.experimentForm > .col-md-3 {
+    width: 27.5%;
+}
+
+.tt {
+    font-family: monospace;
+    font-size: larger;
+}
+
+.tt::before {
+    content: "\00ab";
+}
+
+.tt::after {
+    content: "\00bb";
+}
+
+.video {
+    width: 854;
+    height: 480;
+}
+
+label {
+    font-size: 14px;
+}
+
+#perpetratorCell {
+    background-color: #51a7f9;
+}
+
+#perpetratorCell, #silhouetteCell {
+    padding-bottom: 20px;
+}
+
+.suspectContainer, .perpetratorContainer {
+    margin-top: 20px;
+    padding: 4px 4px 10px 4px;
+}
+
+
+.suspectImage {
+    border: solid 4px whitesmoke;
+    padding: 0px;
+    width: 120px;
+    height: auto;
+    transition: all .2s ease-in-out;
+}
+
+.suspectImage#Silhouette {
+    background-color: white;
+}
+
+#draggable .suspectImage,
+#sortable .suspectImage,
+#lineupSummary .suspectImage {
+    width: auto;
+    height: 225px;
+}
+
+#lineupPanel {
+    padding: 0px;
+    min-width: 1024px;
+}
+
+#lineupPanel .suspectContainer:not(.selected .nohover) .suspectImage:hover {
+    transform: scale(1.1);
+    -webkit-transform: scale(1.1);
+    box-shadow: 4px 4px 5px #a0a0a0;
+}
+
+#perpetrator {
+    width: 150px;
+    height: 235px;
+    border: 2px dotted #51a7f9;
+    background-color: whitesmoke;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.rankLabel {
+    text-align: center;
+    padding-top: 5px;
+    width: 140px;
+}
+
+#sortable div,
+#draggable div {
+    margin: 3px 3px 3px 0;
+    padding: 1px;
+    /* float: left;
+       width: 150px;
+       height: 235px; */
+    width: 140px;
+    height: 219px;
+    font-size: 1em;
+    text-align: center;
+}
+
+.arrow-right {
+  width: 0;
+  height: 0;
+  border-top: 60px solid transparent;
+  border-bottom: 60px solid transparent;
+
+  border-left: 60px solid green;
+}
+
+.instructionsPage {
+    counter-reset: paragraph;
+    padding-left: 0px;
+}
+
+.instructionsPage p:before {
+    position: absolute;
+    background-color: #0465c0;
+    margin-left: -25px;
+    margin-top: 5px;
+    padding: 5px;
+    border-radius: 80px;
+    color: white;
+    content: counter(paragraph);
+    counter-increment: paragraph;
+}
+
+.instructionsPage p {
+    font-size: 16px;
+}
+
+#testTrialPanel .instructionsPage,
+#lineupPanel #p2,
+#studyTrialPanel .instructionsPage,
+#distractorTrialPanel .instructionsPage,
+#finishPanel .instructionsPage {
+    display: flex;
+}
+
+#lineupPanel #p2 {
+    flex-direction: row;
+    width: 200px;
+}
+
+#lineupArray {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: flex-end;
+    min-width: 1024px;
+}
+
+#distractorTrialPanel #p2 {
+    align-items: center;
+}
+
+#distractorTrialPanel .instructionsPage {
+    justify-content: center;
+    align-items: flex-start;
+}
+
+.instructionsPage p {
+    margin-top: 10px;
+    margin-bottom: 10px;
+    margin-left: 40px;
+}
+
+#lineupPanel p {
+    margin: 10px 0 10px 40px;
+    font-size: 14px;
+}
+
+
+#sortable {
+    display: flex;
+    justify-content: center;
+}
+
+#draggable {
+    display: flex;
+    justify-content: center;
+}
+
+table {
+    font-size: 16px;
+}
+
+#scene img#D1 {
+    width: 1024;
+    height: 695.6;
+}
+
+.progress {
+    position:fixed;
+    width: 1014px;
+}
+
+.suspectContainer.selected {
+    position: relative;
+}
+
+.suspectContainer.selected .suspectImage {
+    border: 4px solid #51a7f9;
+}
+
+.suspectContainer.selected .tick {
+    position: absolute;
+    z-index: 2;
+    width: 50px;
+    height: 50px;
+    top: 5;
+    left: 5;
+    /*opacity: 0.9;*/
+}
+
+.suspectContainer:not(.selected) .tick {
+    display: none;
+}
+
+#rankPanel .suspectContainer {
+    border: solid 1px #707070;
+}
+
+#lineupSummary {
+    border-bottom: solid 2px #707070;
+    padding: 0px 8px 8px 8px;
+    margin: 0 2px 8px 2px;
+}
+
+.btn.disabled, .btn[disabled], fieldset[disabled] .btn {
+    opacity: 0.25;
+}
+
+.centeredBox {
+    display: flex;
+    justify-content: center;
+}
+
+#identification {
+    margin-top: 10px;
+}
+
+#sequentialLineupLayout {
+    display: flex;
+    align-items: center;
+}
+
+#yesContainer,
+#noContainer {
+    margin: 10px 10px 10px 0;
+}
+
+#identification .btn-default:not(:hover) {
+    background-color: transparent;
+}
+
+#similarity {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    border: solid 1px #707070;
+    border-radius: 4px;
+    padding: 4px  8px 4px 8px;
+}
+
+#similarity .btn-default {
+    background-color: #d5d5d5;
+    padding: 6px;
+}
+
+.questionBox {
+    margin: 20px;
+}

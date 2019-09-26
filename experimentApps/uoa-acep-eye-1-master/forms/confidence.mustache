@@ -1,0 +1,117 @@
+<form class="experimentForm" method="get">
+  <div class="modal-header">
+    <h4 id="formTitle" class="modal-title">Did you make the right decision?</h4>
+  </div>
+  <div id="formBody" class="modal-body">
+
+    <div id="confidenceAlert" class="validationError hide">
+      <div class="alert alert-warning fade in">
+        <button type="button" class="close" data-dismiss="alert"
+                aria-hidden="true">&times;</button>
+        <span id="errorCount" class="badge"></span>&nbsp;<strong>Error(s):</strong>
+        <span>Please enter values for all fields.</span>
+      </div>
+    </div>
+
+    <table style="width : 90%">
+      <thead>
+      {{#reject}}{{#SEQ}}
+      <p>You have now seen all of the photographs in the lineup.</p>
+      {{/SEQ}}{{/reject}}
+      <p>
+        <b>How confident are you that
+        {{^reject}}
+        the person you identified in the lineup is the person you saw in the ORIGINAL video?
+        {{/reject}}
+        {{#reject}}
+        none of the people in the lineup are the person you saw in the ORIGINAL video?
+        {{/reject}}
+        </b>
+        <br/>Please write a number between 0 and 100 in the box below.
+      </p>
+      <p>
+        A value of <span class="tt">0</span> means that you were
+        completely uncertain and had to guess.
+      </p>
+      <p>
+        A value of <span class="tt">100</span> means that it is
+        impossible that you have made the wrong decision.
+      </p>
+      <br/>
+      </thead>
+      <tr>
+        <td>
+          <label for="rating">Confidence: </label>
+        </td>
+        <td>
+          <input id="rating"
+                 name="rating"
+                 class="typeahead"
+                 type="text"
+                 placeholder="(0 to 100)"/>
+
+            <span class="glyphicon glyphicon-exclamation-sign hide"
+                  data-toggle="tooltip"
+                  title="Please enter your confidence level"/>
+        </td>
+      </tr>
+    </table>
+
+  </div>
+  <div class="modal-footer">
+    <span style="opacity: 0.6">Click here to proceed</span>
+    <!--<button type="submit" class="btn btn-default" data-dismiss="modal">Continue</button>-->
+    <button type="submit" class="btn btn-default" value="Continue">
+      Continue</button>
+  </div>
+</form>
+
+<script>
+  // If the form is being submitted without the submitHandler being called
+  // (evidenced by screen reloading with ?age=XX&gender=YY....
+  // as part of the URL) the problem is often that the call to validate
+  // below did not locate the appropriate form element.
+
+  var validConfidence = [ "0", "1", "2","3", "4","5","6","7","8","9","10", "11","12","13","14","15","16","17","18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "32", "33", "34", "35", "36", "37", "38", "39", "40", "41", "42", "43", "44", "45", "46", "47", "48", "49", "50", "51", "52", "53", "54", "55", "56", "57", "58", "59", "60", "61", "62", "63", "64", "65", "66", "67", "68", "69", "70", "71", "72", "73", "74", "75", "76", "77", "78", "79", "80", "81", "82", "83", "84", "85", "86", "87", "88", "89", "90", "91", "92", "93", "94", "95", "96", "97", "98", "99", "100" ];
+
+  $('#rating').typeahead({
+    name: 'rating',
+    local: validConfidence,
+    limit: 10
+  });
+
+  $('.experimentForm').validate({
+    submitHandler: function (form) {
+      console.log("submit pressed");
+      experiment.next();
+    },
+    onsubmit: true,
+    debug: false,
+    rules: {
+      rating: { required: true, isIn: validConfidence },
+    },
+    invalidHandler: function (event, defaultValidator) {
+      // 'this' refers to the form
+      var errors = defaultValidator.numberOfInvalids();
+      if (errors) {
+        $("#errorCount").text(errors);
+        $('#confidenceAlert').removeClass("hide");
+      }
+      else {
+        $('#confidenceAlert').addClass("hide");
+      }
+    },
+    highlight: function (element, errorClass, validClass) {
+      console.log("error highlight ");
+      $(element).closest("td").find(".glyphicon").removeClass("hide").tooltip({ placement: "auto left"});
+    },
+    unhighlight: function (element, errorClass, validClass) {
+      console.log("error unhighlight ");
+      $(element).closest("td").find(".glyphicon").addClass("hide");
+    },
+    errorPlacement: function (error, element) {
+    }
+  });
+
+</script>
+

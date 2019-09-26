@@ -1,0 +1,147 @@
+<div id="{{id}}" class="trialContainer distractor">
+
+    <div id="distractorTrialPanel" class="panel">
+        <div class="trialHeader">
+            <h4 id="stageText" class="contextText">Phase</h4>
+            <h4 id="questionText" class="contextText">&nbsp</h4>
+            <div class="progress hidden">
+                <div id="progressBar" class="progress-bar progress-bar-striped active" role="progressbar"
+                     aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width:0%">
+                    0%
+                </div>
+            </div>
+        </div>
+
+        <div class="trialBody">
+            <div id="p1" class="instructionsPage invisible">
+                <p id="p1-1" class="instructionsPara col1-4">
+                    Later in the experiment, we'll be asking
+                    you some more questions about the video you
+                    have just seen (which we'll refer to as
+                    the <b>ORIGINAL</b> video).
+                </p>
+
+                <p id="p1-2" class="instructionsPara col1-4">
+                    But before we do, we're going
+                    to show you two more videos.
+                    These new videos look much like the one you have
+                    seen already but each one has a different actor.
+                </p>
+
+                <p id="p1-3" class="instructionsPara col1-4">
+                    After you've seen the videos we'll ask you
+                    how similar you think the two new actors are
+                    to each other.
+                </p>
+
+                <p id="p1-4" class="instructionsPara col1-4">
+                    The second video will start directly after
+                    the first one finishes.
+                    So please pay attention to the actors in each
+                    video.
+                </p>
+            </div>
+
+            <div id="p2" class="instructionsPage hidden">
+                                        <p class="instructionsPara col1-4">Thinking about the faces of the two actors
+                            you have just seen, please use the buttons to the right to indicate how similar
+                            you think the two faces were.</p>
+                <form id="similarityForm" class="questionForm" method="get">
+                        <div class="questionBox">
+                            <!--<div>(Type the number or click the button corresponding to your choice)</div>-->
+
+                            <div id="similarity">
+                                <div>
+                                    <label class="btn btn-default">
+                                        <input id="option1" type="radio" name="similarity" value="1" accesskey="1"
+                                               onfocus="$(this).attr('checked', true);"/>
+                                        <u>1</u>&nbsp;
+                                    </label>
+                                    <i>Very High Similarity</i>
+                                </div>
+                                <label class="btn btn-default">
+                                    <input id="option2" type="radio" name="similarity" value="2" accesskey="2"
+                                           onfocus="$(this).attr('checked', true);"/>
+                                    <u>2</u>&nbsp;
+                                </label>
+                                <label class="btn btn-default">
+                                    <input id="option3" type="radio" name="similarity" value="3" accesskey="3"
+                                           onfocus="$(this).attr('checked', true);"/>
+                                    <u>3</u>&nbsp;
+                                </label>
+                                <label class="btn btn-default">
+                                    <input id="option4" type="radio" name="similarity" value="4" accesskey="4"
+                                           onfocus="$(this).attr('checked', true);"/>
+                                    <u>4</u>&nbsp;
+                                </label>
+                                <label class="btn btn-default">
+                                    <input id="option5" type="radio" name="similarity" value="5" accesskey="5"
+                                           onfocus="$(this).attr('checked', true);"/>
+                                    <u>5</u>&nbsp;
+                                </label>
+                                <label class="btn btn-default">
+                                    <input id="option6" type="radio" name="similarity" value="6" accesskey="6"
+                                           onfocus="$(this).attr('checked', true);"/>
+                                    <u>6</u>&nbsp;
+                                </label>
+                                <label class="btn btn-default">
+                                    <input id="option7" type="radio" name="similarity" value="7" accesskey="7"
+                                           onfocus="$(this).attr('checked', true);"/>
+                                    <u>7</u>&nbsp;
+                                </label>
+                                <label class="btn btn-default">
+                                    <input id="option8" type="radio" name="similarity" value="8" accesskey="8"
+                                           onfocus="$(this).attr('checked', true);"/>
+                                    <u>8</u>&nbsp;
+                                </label>
+                                <div>
+                                    <label class="btn btn-default">
+                                        <input id="option9" type="radio" name="similarity" value="9" accesskey="9"
+                                               onfocus="$(this).attr('checked', true);"/>
+                                        <u>9</u>&nbsp;
+                                    </label>
+                                    <i>Very Low Similarity</i>
+                                </div>
+                            </div>
+                        </div>
+
+                </form>
+            </div>
+
+            <div id="moreVideos" class="instructionsPage hidden">
+                <p id="prv-1" class="instructionsPara col1-4">
+                    We're now going to repeat the process
+                    {{morePairs}}, with a fresh pair of videos
+                </p>
+
+                <p id="prv-2" class="instructionsPara col1-4">
+                    Once again, please pay attention to the
+                    actors in each video.
+                </p>
+            </div>
+        </div>
+        <div class="trialFooter">
+            <div id="instructionStepper" class="contextText">
+                <span id="reminderText">reminder</span>
+                <button id="stepButton" type="button" class="btn btn-default">
+                    <span class="glyphicon glyphicon-step-forward"></span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    {{#distractors}}
+    <div id="contentPanel-{{distractorIndex}}" class="panel hidden">
+        <div id="video-placeholder-{{distractorIndex}}" class="video">
+            If you are seeing this message, then the there
+            has been a problem loading the video that we wished
+            to show you. Please wait a short while, and
+            check whether your internet connection is working
+            properly. If the video fails to load, then you should
+            quit the experiment and report the fault. Please
+            accept our apologies for any inconvenience that
+            this problem may have caused.
+        </div>
+    </div>
+    {{/distractors}}
+</div>

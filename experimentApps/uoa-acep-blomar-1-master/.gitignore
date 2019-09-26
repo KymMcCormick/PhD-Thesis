@@ -1,0 +1,10 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+.idea/
+excluded_workers/
+.DS_Store
+*.nb.html
+results*.csv
+main.pyc

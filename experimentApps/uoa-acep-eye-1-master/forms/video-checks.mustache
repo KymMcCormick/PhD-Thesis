@@ -1,0 +1,145 @@
+<form class="experimentForm" method="get">
+  <div class="modal-header">
+    <h4 class="modal-title">What did you see in the video?</h4>
+  </div>
+  <div id="instructionsBody" class="modal-body">
+
+    <div id="errorAlert" class="validationError hide">
+      <div class="alert alert-warning fade in">
+        <button type="button" class="close" data-dismiss="alert"
+                aria-hidden="true">&times;</button>
+        <span id="errorCount" class="badge"></span>
+        &nbsp;
+        <strong>Incorrect
+          Answer(s):</strong>
+        <span>Please answer all questions.</span>
+      </div>
+    </div>
+
+    <p>
+      Thinking back to the video you just watched...
+    </p>
+
+    <p>
+      <label for="q1">Where did the scene take place?</label>
+    </p>
+
+    <div>
+      <select name="q1" tabindex="1">
+        <option value="1">1. I wasn't watching/can't remember.</option>
+        <option value="2">2. At a concert.</option>
+        <option value="3">3. On a tropical island.</option>
+        <option value="4">4. On a subway train.</option>
+        <option value="5">5. In an office.</option>
+        <option value="6">6. At a gas station.</option>
+      </select>
+
+      <span class="glyphicon glyphicon-exclamation-sign hide"
+            data-toggle="tooltip"
+            title="Missing or incorrect answer"/>
+    </div>
+    <br>
+
+    <p>
+      <label for="q2">Who did you see?</label>
+    </p>
+
+    <div>
+      <select name="q2" tabindex="2">
+        <option value="1">1. Nobody appeared.</option>
+        <option value="2">2. An elderly man.</option>
+        <option value="3">3. A young woman.</option>
+        <option value="4">4. A young man.</option>
+        <option value="5">5. President Trump.</option>
+      </select>
+
+      <span class="glyphicon glyphicon-exclamation-sign hide"
+            data-toggle="tooltip"
+            title="Missing or incorrect answer"/>
+    </div>
+    <br>
+
+    <p>
+      <label for="q3">What were they wearing?</label>
+    </p>
+
+    <div>
+      <select name="q3" tabindex="3">
+        <option value="1">1. I didn't see anybody.</option>
+        <option value="2">2. Jeans and a t-shirt.</option>
+        <option value="3">3. A bathing suit.</option>
+        <option value="4">4. A business suit.</option>
+        <option value="5">5. Overalls.</option>
+        <option value="6">6. A dress.</option>
+      </select>
+
+      <span class="glyphicon glyphicon-exclamation-sign hide"
+            data-toggle="tooltip"
+            title="Missing or incorrect answer"/>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <span style="opacity: 0.6">Click here to proceed</span>
+    <button id="continueButton" type="submit" class="btn btn-default" value="Continue">Continue</button>
+  </div>
+</form>
+
+<script>
+
+  var validationForm = $('.experimentForm');
+  var invalidated = false;
+  var highlighted = false;
+
+  validationForm.validate({
+    submitHandler: function (form) {
+      console.log("submit pressed");
+
+      if (invalidated || highlighted) {
+        experiment.currentStage.handleError();
+      }
+      else {
+        experiment.next();
+      }
+    },
+    onsubmit: true,
+    debug: false,
+    rules: {
+      q1: { required: true },
+      q2: { required: true },
+      q3: { required: true }
+    },
+    invalidHandler: function (event, defaultValidator) {
+        console.log("invalid handler")
+      // 'this' refers to the form
+      var errors = defaultValidator.numberOfInvalids();
+      if (errors) {
+        $("#errorCount").text(errors);
+        $('#errorAlert').removeClass("hide");
+        $('#continueButton').html("Review");
+
+        if (!invalidated) {
+          invalidated = true;
+        }
+        else {
+            console.log("about to handle error")
+          experiment.currentStage.handleError();
+        }
+      }
+      else {
+        $('#errorAlert').addClass("hide");
+      }
+    },
+    highlight: function (element, errorClass, validClass) {
+      console.log("error highlight ");
+      highlighted = true;
+      $(element).closest("td").find(".glyphicon").removeClass("hide").tooltip({ placement: "auto left"});
+    },
+    unhighlight: function (element, errorClass, validClass) {
+      console.log("error unhighlight ");
+      $(element).closest("td").find(".glyphicon").addClass("hide");
+    },
+    errorPlacement: function (error, element) {
+    }
+  });
+
+</script>
