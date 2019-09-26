@@ -10,6 +10,7 @@ output:
 ```{r setup, include=FALSE, results='hide'}
 
 knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = "C:/Users/User/Documents/Kym/PhD-Thesis/data/Experiment 3")
 
 
 library("psych")
@@ -17,61 +18,60 @@ library("tidyverse")
 library("MPTinR")
 library("readr")
 
-setwd("C:/Users/User/Documents/Kym/PhD-Thesis")
+getwd()
 
-data <- read.csv("C:/Users/User/Downloads/results_20170720 (1).csv")
-
+#data <- read.csv("C:/Users/User/Downloads/results_20170720 (1).csv")
 
 ```
 
 ```{r data wrangling, echo=FALSE}
+data <- read.csv(file = "RawDataAugust2019 (2).csv")
+data$date <- as.Date(data$date)
+
 ## Select variables ----
 din <- data %>%
   select(uid,
          condition, 
-         Rank_T.1_order_final,
-         Test_T.1_finalSelection,
+         Rank_T1_lineupOrder,
+         Rank_T1_selectionOrder,
+         Test_T1_suspectIdentified,
          demographics_age, 
          demographics_gender, 
-         demographics_country)%>%
+         demographics_country,
+         date)%>%
   
 ## Select data from USA only ----  
-  filter(demographics_country == "USA", Rank_T.1_order_final != "") %>%
+  filter(demographics_country == "USA", Rank_T1_selectionOrder != "") %>%
 
 ## separate the condition variable into separate columns ---
   separate(condition,c("memory","expectation", "target")) %>%
   filter(target == "P")%>%
   
 ## separate the ranking variable into separate columns ---
-  separate(Rank_T.1_order_final,c("Rank_1","Rank_2","Rank_3","Rank_4","Rank_5","Rank_6"))
+  separate(Rank_T1_selectionOrder,c("Rank_1","Rank_2","Rank_3","Rank_4","Rank_5","Rank_6", "Rank_7", "Rank_8"))%>%
 
-din.Choose <- din%>%
-  filter(Test_T.1_finalSelection != "Silhouette")
-din.NoChoose <- din %>%
-  filter(Test_T.1_finalSelection == "Silhouette")
+drop_na() %>%
 
-## Create columns recording accuracy for each rank --- Again, there is probably a better way to do this
-din.Choose <- din.Choose %>%
-  mutate(R1_Corr = if_else(Test_T.1_finalSelection == "Target", 1, 0),
-         R2_Corr = if_else(Rank_1 == "Target", 1, 0),
-         R3_Corr = if_else(Rank_2 == "Target", 1, 0),
-         R4_Corr = if_else(Rank_3 == "Target", 1, 0),
-         R5_Corr = if_else(Rank_4 == "Target", 1, 0),
-         R6_Corr = if_else(Rank_5 == "Target", 1, 0)
+## Create columns recording accuracy for each rank
+  mutate(R1_Corr = if_else(Rank_1 == "F68", 1,0),
+         R2_Corr = if_else(Rank_2 == "F68", 1,0),
+         R3_Corr = if_else(Rank_3 == "F68", 1,0),
+         R4_Corr = if_else(Rank_4 == "F68", 1,0),
+         R5_Corr = if_else(Rank_5 == "F68", 1,0),
+         R6_Corr = if_else(Rank_6 == "F68", 1,0),
+         R7_Corr = if_else(Rank_7 == "F68", 1,0),
+         R8_Corr = if_else(Rank_8 == "F68", 1,0)
          )
-din.NoChoose <- din.NoChoose %>%
-  mutate(R1_Corr = if_else(Rank_1 == "Target", 1, 0),
-         R2_Corr = if_else(Rank_2 == "Target", 1, 0),
-         R3_Corr = if_else(Rank_3 == "Target", 1, 0),
-         R4_Corr = if_else(Rank_4 == "Target", 1, 0),
-         R5_Corr = if_else(Rank_5 == "Target", 1, 0),
-         R6_Corr = if_else(Rank_6 == "Target", 1, 0)
-         )
-din <- rbind(din.NoChoose,din.Choose)
-## Create a column of counts --- There is probably an easier way to do this  
-din$n <- if_else(!is.na(din$demographics_country) == "USA",1,0)
+  
+##Create a column of counts
+din$n <- if_else(!is.na(din$demographics_country) == "USA", 1,0) 
+  
+## Convert date to correct format
+din$date <- as.Date(din$date, "%Y-%m-%d")
 
-
+## Convert memory condition to the correct level 
+din$memory <- ifelse(din$date == "2019-08-07", "VW", din$memory)
+  
 ```
 
 ##Demographics                       
@@ -103,7 +103,9 @@ Rank_dvector <- din %>%
             r3 = sum(R3_Corr),
             r4 = sum(R4_Corr),
             r5 = sum(R5_Corr),
-            r6 = sum(R6_Corr)
+            r6 = sum(R6_Corr),
+            r7 = sum(R7_Corr),
+            r8 = sum(R8_Corr)
             ) %>% 
   ungroup()%>%
 select(-memory) %>%
@@ -112,7 +114,7 @@ select(-memory) %>%
   ## Return as a structured vector  
   as.matrix() %>% 
   as.vector %>%
-  structure(.Dim= c(2L,6L))
+  structure(.Dim= c(3L,8L))
 ```
 ```{r, echo=FALSE}
 Rank_dvector
@@ -132,13 +134,15 @@ Rank_dvector_collapsed <- din %>%
             r3 = sum(R3_Corr),
             r4 = sum(R4_Corr),
             r5 = sum(R5_Corr),
-            r6 = sum(R6_Corr)
+            r6 = sum(R6_Corr),
+            r7 = sum(R7_Corr),
+            r8 = sum(R8_Corr)
             ) %>% 
 
 ## Return as a structured vector  
   as.matrix() %>% 
   as.vector %>%
-  structure(.Dim= c(1L,6L))
+  structure(.Dim= c(1L,8L))
 
 ## Bind the resulting vector to Rank_dvector
 Rank_dvector <- rbind(Rank_dvector,Rank_dvector_collapsed)
@@ -159,6 +163,8 @@ Rank_prop <- din  %>%
             Rank_4 = sum(R4_Corr)/sum(n),
             Rank_5 = sum(R5_Corr)/sum(n),
             Rank_6 = sum(R6_Corr)/sum(n),
+            Rank_7 = sum(R7_Corr)/sum(n),
+            Rank_8 = sum(R8_Corr)/sum(n),
             n = n()
             )
   Rank_prop
@@ -166,7 +172,7 @@ Rank_prop <- din  %>%
 
 ```{r, echo=FALSE}
   matplot(t(Rank_prop[,2:7]), type = "p", bty="l", pch=c(19,17), ylab = "Proportion Correct", xlab = "Rank position", ylim = 0:1)
-  legend("topleft", legend = c("Strong memory","Weak memory"),pch =c(19,17), col = c("black","red"), inset = .05)
+  legend("topleft", legend = c("Strong memory","Weak memory", "Very weak memory"),pch =c(19,17), col = c("black","red", "green"), inset = .05)
   box("plot")
 ```
 ##Conditional rank probabilities
@@ -179,7 +185,7 @@ Cond_Cum_R <- din %>%
   
 ## Separate into levels of memory strength (High and Low) ---  
   group_by(memory)%>%
-  
+  print()%>%
 ## Sum the correct selection of the target across each rank postion ---  
   summarise(r1 = sum(R1_Corr),
             r2 = sum(R2_Corr),
@@ -187,8 +193,11 @@ Cond_Cum_R <- din %>%
             r4 = sum(R4_Corr),
             r5 = sum(R5_Corr),
             r6 = sum(R6_Corr),
-            n = r1+r2+r3+r4+r5+r6
+            r7 = sum(R7_Corr),
+            r8 = sum(R8_Corr),
+            n = r1+r2+r3+r4+r5+r6+r7+r8
             ) %>% 
+  print()%>%
   
 ## Calcluate conditional rank probabilities ---
   mutate(c1 = r1/n,
@@ -196,21 +205,34 @@ Cond_Cum_R <- din %>%
          c3 = r3/(n-r1-r2),
          c4 = r4/(n-r1-r2-r3),
          c5 = r5/(n-r1-r2-r3-r4),
-         c6 = r6/(n-r1-r2-r3-r4-r5)
+         c6 = r6/(n-r1-r2-r3-r4-r5),
+         c7 = r7/(n-r1-r2-r3-r4-r5-r6),
+         c8 = r8/(r8)
          ) 
 Cond_Cum_R
+
+## Create a structured vector
+Cond_Cum_RV <- Cond_Cum_R %>%
+  select(-memory,-n) %>%
+  as.matrix() %>%
+  as.vector() %>%
+  structure(.Dim = c(3L,16L))
+
+Cond_Cum_RV <- Cond_Cum_RV[,9:16]
+Cond_Cum_RV
 ```
 ```{r}
-Strong <- as.data.frame(t(Cond_Cum_R[1,9:14]))
-Strong$Rank <- c(1:6)
+Strong <- as.data.frame(t(Cond_Cum_R[1,11:18]))
+Strong
+Strong$Rank <- c(1:8)
 Strong$Memory <- c(rep("Strong",2))
 
-Weak <- as.data.frame(t(Cond_Cum_R[3,9:14]))
-Weak$Rank <- c(1:6)
+Weak <- as.data.frame(t(Cond_Cum_R[3,11:18]))
+Weak$Rank <- c(1:8)
 Weak$Memory <- c(rep("Weak",2))
 
-VeryWeak <- as.data.frame(t(Cond_Cum_R[2,9:14]))
-VeryWeak$Rank <- c(1:6)
+VeryWeak <- as.data.frame(t(Cond_Cum_R[2,11:18]))
+VeryWeak$Rank <- c(1:8)
 VeryWeak$Memory <- c(rep("VeryWeak",2))
 
 ci <- rbind(Strong,Weak,VeryWeak)
@@ -230,7 +252,7 @@ ciPlot1 <- ggplot(ciSVW,aes(x = Rank, y = ci))+
   scale_shape_manual(values = c(16, 1)) +
   theme_classic()+
   theme(legend.position="bottom")+
-  scale_x_continuous(breaks = scales::pretty_breaks(n = 6)) + 
+  scale_x_continuous(breaks = scales::pretty_breaks(n = 8)) + 
   scale_y_continuous(breaks = scales::pretty_breaks(n = 10))
 ciPlot1
 ```
@@ -258,17 +280,29 @@ ciS <- ci %>%
   filter(Memory == "Strong")%>%
   rename(Strong = Memory)
 
-ciPlot2 <- ggplot(ciWVW,aes(x = Rank, y = ci))+
+labels <- c(VeryWeak = "Degraded encoding", Weak = "Interference")
+
+ciPlot <- ggplot(ciWVW,aes(x = Rank, y = ci))+
   geom_line(linetype = 2) +
-   geom_point(shape = 1, size = 3) +
+  geom_point(shape = 1, size = 3) +
   geom_line(data = ciS, linetype = 1)+
   geom_point(data = ciS, shape = 16, size = 3)+
-  facet_grid(.~Memory)+
   theme_bw() +
-  theme(legend.position="bottom") +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        strip.text.x = element_text(size=12),
+        strip.background = element_rect(colour="black", fill=("0")),
+        legend.position = "bottom") +
   scale_x_continuous(breaks = scales::pretty_breaks(n = 6)) + 
-  scale_y_continuous(breaks = scales::pretty_breaks(n = 10))
-ciPlot2
+  scale_y_continuous(breaks = scales::pretty_breaks(n = 10))+
+  facet_grid(.~Memory, labeller=labeller(Memory = labels))
+
+ciPlot
+
+svg("ciPlot.svg")
+print(ciPlot)       # Plot 1 --> in the first page of PDF
+#print(myplot2)     # Plot 2 ---> in the second page of the PDF
+dev.off() 
 
 ```
 
@@ -301,7 +335,7 @@ Model
 ```{r, Model}
 
 expSDTrank <- function(Q, param.names, n.params, tmp.env){
-  n <- 6
+  n <- 8
   e <- vector("numeric", n)
   mu <- Q[1]
   ss <- Q[2]
@@ -332,7 +366,7 @@ Rank_strong <- fit.mptinr(
   data = Cond_Cum_Rank[1,], 
   objective = SDTrank, 
   param.names = c("mu", "sigma"), 
-  categories.per.type = 6, 
+  categories.per.type = 8, 
   prediction = expSDTrank, 
   lower.bound = c(0,0.1), 
   upper.bound = Inf,
