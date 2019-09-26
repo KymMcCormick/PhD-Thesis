@@ -10,6 +10,7 @@ output:
 ```{r setup, include=FALSE, results='hide'}
 
 knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = "C:/GitHub projects/PhD-Thesis/c2 test")
 
 
 library("psych")
@@ -17,16 +18,17 @@ library("tidyverse")
 library("MPTinR")
 library("readr")
 
-setwd("C:/Users/User/Documents/Kym/PhD-Thesis")
+getwd()
 
-data <- read.csv("C:/Users/User/Downloads/results_20170720 (1).csv")
 
 
 ```
 
 ```{r data wrangling, echo=FALSE}
+data_e1 <- read.csv(file = "experiment_1_Raw.csv")
+
 ## Select variables ----
-din <- data %>%
+din_e1 <- data_e1 %>%
   select(uid,
          condition, 
          Rank_T.1_order_final,
@@ -45,9 +47,9 @@ din <- data %>%
 ## separate the ranking variable into separate columns ---
   separate(Rank_T.1_order_final,c("Rank_1","Rank_2","Rank_3","Rank_4","Rank_5","Rank_6"))
 
-din.Choose <- din%>%
+din.Choose <- din_e1%>%
   filter(Test_T.1_finalSelection != "Silhouette")
-din.NoChoose <- din %>%
+din.NoChoose <- din_e1 %>%
   filter(Test_T.1_finalSelection == "Silhouette")
 
 ## Create columns recording accuracy for each rank --- Again, there is probably a better way to do this
@@ -67,10 +69,11 @@ din.NoChoose <- din.NoChoose %>%
          R5_Corr = if_else(Rank_5 == "Target", 1, 0),
          R6_Corr = if_else(Rank_6 == "Target", 1, 0)
          )
-din <- rbind(din.NoChoose,din.Choose)
+din_e1 <- rbind(din.NoChoose,din.Choose)
 ## Create a column of counts --- There is probably an easier way to do this  
-din$n <- if_else(!is.na(din$demographics_country) == "USA",1,0)
+din_e1$n <- if_else(!is.na(din_e1$demographics_country) == "USA",1,0)
 
+din_e1 <- din_e1%>%   rename(Choice = Test_T.1_finalSelection)
 
 ```
 
@@ -79,7 +82,7 @@ din$n <- if_else(!is.na(din$demographics_country) == "USA",1,0)
 
 describe(din$demographics_age)
 
-demo <- din %>% 
+demo <- din_e1 %>% 
   select(demographics_gender) %>% 
   map(~prop.table(table(.)))
 demo
@@ -89,7 +92,7 @@ demo
 ###Across different levels of memory
 ```{r, ranking counts by memory}
 ## Create a vector of rank counts ---
-Rank_dvector <- din %>% 
+Rank_dvector <- din_e1 %>% 
   
 ## Only include target present lineup data ---  
   filter(target == "P") %>%
@@ -121,7 +124,7 @@ Rank_dvector
 ###Collapsed
 ```{r, overall ranking counts}
 ## Create a vector of rank counts ---
-Rank_dvector_collapsed <- din %>% 
+Rank_dvector_collapsed <- din_e1 %>% 
   
 ## Only include target present lineup data ---  
   filter(target == "P") %>%
@@ -150,7 +153,7 @@ Rank_dvector
 
 ##Proportional correct 
 ```{r}
-Rank_prop <- din  %>%
+Rank_prop <- din_e1  %>%
   filter(target == "P")%>%
   group_by(memory) %>%
   summarise(Rank_1 = sum(R1_Corr)/sum(n),
@@ -172,7 +175,7 @@ Rank_prop <- din  %>%
 ##Conditional rank probabilities
 ```{r}
 ## Create a vector of conditional rank probabilities ---
-Cond_Cum_Rank <- din %>% 
+Cond_Cum_Rank <- din_e1 %>% 
   
 ## Only include target present lineup data ---  
   filter(target == "P") %>%
