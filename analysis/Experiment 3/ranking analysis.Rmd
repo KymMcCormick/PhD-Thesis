@@ -15,7 +15,8 @@ library("tidyverse")
 library("MPTinR")
 library("readr")
 
-setwd("C:/Users/User/Documents/Kym/PhD-Thesis")
+#setwd("C:/Users/User/Documents/Kym/PhD-Thesis") #Uni computer
+setwd("C:/Users/mccormick/Documents/GitHub/PhD-Thesis") #notebook computer
 
 data <- read_csv("data/Experiment 3/RawDataAugust2019 (2).csv")
 
@@ -83,6 +84,12 @@ demo <- din %>%
   map(~prop.table(table(.)))
 demo
 ```
+## Median confidence for each group
+```{r}
+Rank_confidence <- din %>%
+  filter(target == "P")%>%
+  group
+```
 
 ##Counts of correct identifications within each rank position
 ###Across different levels of memory
@@ -94,7 +101,7 @@ Rank_dvector <- din %>%
   filter(target == "P") %>%
 
 ## Separate into levels of memory strength (Strong, Weak, and Very Weak) ---  
-  group_by(memory)%>%
+  group_by(expectation, Test_T1_suspectIdentified)%>%
   
 ## Sum the correct selection of the target across each rank postion ---  
   summarise(r1 = sum(R1_Corr),
@@ -108,10 +115,10 @@ Rank_dvector <- din %>%
             )  %>%
 
 ## Return as a structured vector  
-  select(-memory) %>%
+ # select(-memory) %>%
   as.matrix() %>% 
   as.vector %>%
-  structure(.Dim= c(3L,8L))
+  structure(.Dim= c(20L,10L))
 ```
 ```{r, echo=FALSE}
 Rank_dvector
@@ -318,7 +325,7 @@ rank.weak.para <- Rank_weak$parameters%>%
   select(estimates)
 ```
 
-Combined
+Very weak
 ```{r, echo=FALSE}
 Rank_veryWeak <- fit.mptinr(
   data = Rank_dvector[2,], 
