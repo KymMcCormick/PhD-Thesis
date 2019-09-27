@@ -1,5 +1,5 @@
 ---
-title: "Analysis of Eyewitness ranking data"
+title: "Analysis of Eyewitness ranking data: Experiment 1"
 author: "Kym McCormick"
 date: "15 May 2019"
 output:
@@ -20,11 +20,6 @@ library("readr")
 
 getwd()
 
-
-
-```
-
-```{r data wrangling, echo=FALSE}
 data_e1 <- read.csv(file = "experiment_1_Raw.csv")
 
 ## Select variables ----

@@ -1,5 +1,5 @@
 ---
-title: "Analysis of Eyewitness ranking data"
+title: "Analysis of Eyewitness ranking data: Experiment 2"
 author: "Kym McCormick"
 date: "15 May 2019"
 output:
@@ -22,9 +22,6 @@ getwd()
 
 #data <- read.csv("C:/Users/User/Downloads/results_20170720 (1).csv")
 
-```
-
-```{r data wrangling, echo=FALSE}
 data_e2 <- read.csv(file = "experiment_2_Raw.csv")
 data_e2$date <- as.Date(data_e2$date)
 
@@ -225,7 +222,6 @@ Cond_Cum_RV
 ```
 ```{r}
 Strong <- as.data.frame(t(Cond_Cum_R[1,11:18]))
-Strong
 Strong$Rank <- c(1:8)
 Strong$Memory <- c(rep("Strong",2))
 
@@ -284,7 +280,7 @@ ciS <- ci %>%
 
 labels <- c(VeryWeak = "Degraded encoding", Weak = "Interference")
 
-ciPlot <- ggplot(ciWVW,aes(x = Rank, y = ci))+
+ciPlot_e2 <- ggplot(ciWVW,aes(x = Rank, y = ci))+
   geom_line(linetype = 2) +
   geom_point(shape = 1, size = 3) +
   geom_line(data = ciS, linetype = 1)+
@@ -304,15 +300,15 @@ ciPlot <- ggplot(ciWVW,aes(x = Rank, y = ci))+
   facet_grid(.~Memory, labeller=labeller(Memory = labels))+ 
   theme(aspect.ratio = 1)
 
-ciPlot
+ciPlot_e2
 
-svg("C:/Users/User/Documents/Kym/PhD-Thesis/analysis/Experiment 3/ciPlot.svg")
-print(ciPlot)       # Plot 1 --> in the first page of PDF
+svg("C:/GitHub projects/PhD-Thesis/c2 test/Output/ciPlot_e2.svg")
+print(ciPlot_e2)       # Plot 1 --> in the first page of PDF
 #print(myplot2)     # Plot 2 ---> in the second page of the PDF
 dev.off() 
 
-pdf("C:/Users/User/Documents/Kym/PhD-Thesis/analysis/Experiment 3/ciPlot.pdf")
-print(ciPlot)       # Plot 1 --> in the first page of PDF
+pdf("C:/GitHub projects/PhD-Thesis/c2 test/Output/ciPlot_e2.pdf")
+print(ciPlot_e2)       # Plot 1 --> in the first page of PDF
 #print(myplot2)     # Plot 2 ---> in the second page of the PDF
 dev.off() 
 ```
@@ -323,8 +319,8 @@ dev.off()
 Setting up ranking to look at between choosers and non-choosers
 ```{r}
 Choosing <- din_e2 %>%
-  select(memory, expectation, target, R1_Corr, R2_Corr, R3_Corr, R4_Corr, R5_Corr, R6_Corr, R7_Corr, R8_Corr, Test_T1_suspectIdentified)%>%
-  mutate(choose = if_else(Test_T1_suspectIdentified != "Silhouette", 1, 0))
+  select(memory, expectation, target, R1_Corr, R2_Corr, R3_Corr, R4_Corr, R5_Corr, R6_Corr, R7_Corr, R8_Corr, Choice)%>%
+  mutate(choose = if_else(Choice != "Silhouette", 1, 0))
   
 ## Create a vector of conditional rank probabilities ---
 Choosing <- Choosing %>% 
@@ -411,7 +407,7 @@ Plot by choosers and memory
 ```{r}
 labels <- c(Strong = "Normal","Very Weak" = "Degraded encoding", Weak = "Interference")
 
-ciChoosePlot <- ggplot(ciChoose,aes(x = Rank, y = ci))+
+ciChoosePlot_e2 <- ggplot(ciChoose,aes(x = Rank, y = ci))+
   geom_line(data = ciS, linetype = 1, color = "light grey")+
   geom_point(data = ciS, shape = 16, size = 3, color = "light grey")+
   geom_line(linetype = 1) +
@@ -431,16 +427,14 @@ ciChoosePlot <- ggplot(ciChoose,aes(x = Rank, y = ci))+
   facet_grid(Choose~Memory, labeller=labeller(Memory = labels)) + 
   theme(aspect.ratio = 1)
 
-ciChoosePlot
+ciChoosePlot_e2
 
-svg("C:/Users/User/Documents/Kym/PhD-Thesis/analysis/Experiment 3/ciChoosePlot.svg")
-print(ciChoosePlot)       # Plot 1 --> in the first page of PDF
-#print(myplot2)     # Plot 2 ---> in the second page of the PDF
+svg("C:/GitHub projects/PhD-Thesis/c2 test/Output/ciChoosePlot_e2.svg")
+print(ciChoosePlot_e2)       # Plot 1 --> in the first page of PDF
 dev.off() 
 
-pdf("C:/Users/User/Documents/Kym/PhD-Thesis/analysis/Experiment 3/ciChoosePlot.pdf")
-print(ciChoosePlot)       # Plot 1 --> in the first page of PDF
-#print(myplot2)     # Plot 2 ---> in the second page of the PDF
+pdf("C:/GitHub projects/PhD-Thesis/c2 test/Output/ciChoosePlot_e2.pdf")
+print(ciChoosePlot_e2)       # Plot 1 --> in the first page of PDF
 dev.off() 
 
 ```
