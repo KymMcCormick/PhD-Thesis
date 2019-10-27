@@ -13,19 +13,33 @@ x <- vector()
 b <- function(r, n,f){
   for (i in r:n)
   y[i] <-    choose(n-1,i-1)*(1-f)^(i-1)*f^(n-i)/i
-  #print(y)
+  # print(y)
   return(sum(y,na.rm = TRUE))
 }
  
-Rank_prob <- function(n,f){
+Ratioc2c3 <- function(n,f){
   for (i in 1:3)
     x[i] <- b(i,n,f)
+  #print(x)
+  #print(x[2]/(1-x[1]))
+  #print((x[3]/(1-x[1]-x[2])))
     x[4] <- (x[2]/(1-x[1]))/(x[3]/(1-x[1]-x[2]))
   #print(x)
-  return(x[3])
+  return(x[4])
 }
 
-Rank_prob(4,.5)
+Ratioc3c2 <- function(n,f){
+  for (i in 1:3)
+    x[i] <- b(i,n,f)
+  #print(x)
+  #print(x[2]/(1-x[1]))
+  #print((x[3]/(1-x[1]-x[2])))
+    x[4] <- (x[3]/(1-x[1]-x[2]))/(x[2]/(1-x[1]))
+  #print(x)
+  return(x[4])
+}
+
+Ratioc2c3(5,0)
 ```
 
 Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
@@ -34,17 +48,32 @@ When you save the notebook, an HTML file containing the code and output will be 
 
 The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
 ```{r}
-
+  s <- seq(0,1, by=.001)
 test <- function(n){
-  s <- seq(0,1, by=.01)
+
 for (i in 1:length(s)) 
-  x[i] <- Rank_prob(8,s[i])
+  x[i] <- Ratioc2c3(n,s[i])
 return(x)
 }
 v <- test(8)
+plot(s, v, ylab="Ratio c(3)/c(2)", xlab = "f",type = "l")
+v <- as.data.frame(v)
+ggplot(v,aes(s,v))+
+  geom_line()
 ```
 ```{r}
+  s <- seq(0,1, by=.001)
+test <- function(n){
 
-plot(v)
+for (i in 1:length(s)) 
+  x[i] <- Ratioc3c2(n,s[i])
+return(x)
+}
+v <- test(10)
+plot(s, v, ylab="Ratio c(3)/c(2)", xlab = "f",type = "l")
+v <- as.data.frame(v)  
+ggplot(v,aes(s,v))+
+  geom_line()
+
 ```
 
