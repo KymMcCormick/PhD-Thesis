@@ -1,0 +1,45 @@
+---
+title: "Untitled"
+author: "Kym McCormick"
+date: "25/10/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+
+
+```{r cars}
+n <- 4
+x <- seq(1,n, by = 1)
+
+
+f <- seq(0, 1, by=0.01)
+
+pr <- function(n,f,x){
+  for i in (1:n)
+  y[i] <- sum(choose(n-1,x-1)*(1-f)^(x-1)*f^(n-x)/x)
+}
+
+
+
+
+#c <- function(n,f,x,p_x){
+#  p_x/1-
+#}
+
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+r <- pr(n,.5,x); r
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

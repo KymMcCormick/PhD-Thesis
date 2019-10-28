@@ -1,66 +1,144 @@
 ---
-title: "R Notebook"
-output: html_notebook
+title: "Untitled"
+author: "Kym McCormick"
+date: "28/10/2019"
+output: pdf_document
 ---
 
-This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
 
-Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
-
-```{r}
-y <- vector()
+```{r, include=FALSE}
+library(ggplot2)
 x <- vector()
-b <- function(r, n,f){
-  for (i in r:n)
-  y[i] <-    choose(n-1,i-1)*(1-f)^(i-1)*f^(n-i)/i
-  # print(y)
-  return(sum(y,na.rm = TRUE))
-}
- 
-Ratioc2c3 <- function(n,f){
-  for (i in 1:3)
-    x[i] <- b(i,n,f)
-  #print(x)
-  #print(x[2]/(1-x[1]))
-  #print((x[3]/(1-x[1]-x[2])))
-    x[4] <- (x[2]/(1-x[1]))/(x[3]/(1-x[1]-x[2]))
-  #print(x)
-  return(x[4])
-}
-
-Ratioc3c2 <- function(n,f){
-  for (i in 1:3)
-    x[i] <- b(i,n,f)
-  #print(x)
-  #print(x[2]/(1-x[1]))
-  #print((x[3]/(1-x[1]-x[2])))
-    x[4] <- (x[3]/(1-x[1]-x[2]))/(x[2]/(1-x[1]))
-  #print(x)
-  return(x[4])
-}
-
-Ratioc2c3(5,0)
 ```
 
-Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+# Ranking Probabilities
 
-When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+For an $n$-item lineup consisting of one target and $n-1$ foils, let $t$ be the probability that the eyewitness will detect the target (as the target) and let $f$ be the probability that they will detect a foil (as a foil). Let $[n]=\{1,\ldots,n\}$.
 
-The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
+Suppose for a given eyewitness that $k \in [n-1]$ foils are not detected. We assume that the target is never detected as a foil. Then the \textit{effective lineup size} is $x=k+1$. Let $s(x)$ be the probability that the effective lineup size is $x$. Then
+
+$$s(x) = \binom{n-1}{x-1}(1-f)^{x-1}f^{n-x}.$$
+
+## Rank probability
+
+Suppose that the target is not detected as a target and the  effective lineup size is $x$ items. Then the target has an equal probability of being assigned a rank from 1 to $x$. Let $p(r)$ be the probability that the target is assigned rank $r \in [n]$, given it is not detected. Then 
+
+\begin {equation} \label {eq:eq1}
+p(r)=\sum^{n}_{x=r}\frac{s(x)}{x}.
+\end {equation}
+
+The function $p(r)$:
 ```{r}
-  s <- seq(0,1, by=.001)
-test <- function(n){
-
-for (i in 1:length(s)) 
-  x[i] <- Ratioc2c3(n,s[i])
-return(x)
+b <- function(r, n, f){
+  for (i in r:n)
+    x[i] <- choose(n-1, i-1)*(1-f)^(i-1)*f^(n-i)/i
+  return(sum(x, na.rm = TRUE))
 }
-v <- test(8)
-plot(s, v, ylab="Ratio c(3)/c(2)", xlab = "f",type = "l")
-v <- as.data.frame(v)
-ggplot(v,aes(s,v))+
-  geom_line()
-optimise(f=Ratioc2c3, c(0,1), maximum = FALSE, n=8)
+
+p <- function(n, f){
+  for (i in 1:n)
+    x[i] <- b(i, n, f)
+  return(x)
+}
 
 ```
+
+
+
+We assume that if the target is detected it is assigned rank 1. Let $q(r)$ be the probability that a target is assigned rank $r \in [n]$. Then
+
+\begin {equation}\label {eq:eq2}
+q(r):\left\{
+   \begin {aligned}
+   t+(1-t)p(r)&,\; r=1  \\
+   (1-t)p(r)&, \; r>1\\
+   \end {aligned}
+   \right.
+\end {equation}
+
+
+
+# Conditional Ranking Probabilities
+
+Let $Q(r)$ be the cumulative sum,
+\begin {equation} \label {eq:eq3}
+Q(r) = \sum^{r}_{i=1}q(i).
+\end {equation}
+
+Let $c(r)$ be the conditional probability that the target is assigned rank $r$ given that it has not been assigned any rank less than $r$. Then
+
+\begin {equation}\label {eq:eq4}
+c(r):\left\{
+   \begin {aligned}
+   q(r)&,\; r=1  \\
+   \frac{q(r)}{(1-Q(r-1))}&, \; r>1\\
+   \end {aligned}
+   \right.
+\end {equation}
+
+# Theorem
+
+We want to show that $c(2)<c(3)$. Suppose $c(2)<c(3)$. I thought I would try a brute force approach (although unsuccessfully). From Equations \eqref{eq:eq3} and \eqref{eq:eq4},
+$$\frac{q(2)}{1-q(1)}<\frac{q(3)}{1-q(1)-q(2)}$$
+\noindent From Equation \eqref{eq:eq4},
+$$\frac{(1-t)p(2)}{1-t-(1-t)p(1)}<\frac{(1-t)q(3)}{1-t-(1-t)p(1)-(1-t)p(2)}$$
+\noindent For $t<1$,
+$$\frac{p(2)}{1-p(1)}<\frac{p(3)}{1-p(1)-p(2)}$$
+
+If the theorem is true, then $c(2)/c(3)$ is $<1$ for all values of $n$ and $f$.
+
+## Demonstration of theorem
+
+The function $c(2)/c(3)$:
+```{r}
+c2c3ratio <- function(n, f){
+  x <- p(n,f)
+  x[n+1] <- (x[2]/(1-x[1]))/(x[3]/(1-x[1]-x[2]))
+  return(x[n+1])
+}
+
+```
+
+
+Draw the function $c(2)/c(3)$ for $n=8$:
+
+```{r}
+#Set the value of n
+n <- 8
+
+# Create a vector of values of f
+s <- seq(0,.99999, by=.001) 
+
+# The function calculating c(2)/c(3) for each value in vector s
+Ratio <- function(n){
+  for (i in 1:length(s)) 
+    x[i] <- c2c3ratio(n,s[i])
+  return(x)
+}
+
+# Create a vector of c(2)/c(3) ratios for all values of f where n = n
+v <- Ratio(n)
+
+# Draw the function for n = n
+v <- as.data.frame(v)
+ggplot(v,aes(s,v)) + 
+  geom_line()+
+  labs(subtitle="Ratio of conditional second to conditional third choices for all values of f", 
+       x="f", 
+       y="Ratio"
+       ) +
+  theme_bw()
+
+```
+
+
+Determine the minimum value of $c(2)/c(3)$ and identify the value of $f$ where this occurs:
+
+```{r}
+optimise(f=c2c3ratio, c(0,1), maximum = FALSE, n=n)
+```
+
 
