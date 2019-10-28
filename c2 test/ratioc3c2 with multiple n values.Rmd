@@ -1,45 +1,197 @@
 ---
 title: "Untitled"
 author: "Kym McCormick"
-date: "25/10/2019"
-output: html_document
+date: "28/10/2019"
+output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## R Markdown
+```{r, include=FALSE}
+library(ggplot2)
+x <- vector()
+```
 
+# Ranking Probabilities
 
+For an $n$-item lineup consisting of one target and $n-1$ foils, let $t$ be the probability that the eyewitness will detect the target (as the target) and let $f$ be the probability that they will detect a foil (as a foil). Let $[n]=\{1,\ldots,n\}$.
 
-```{r cars}
-n <- 4
-x <- seq(1,n, by = 1)
+Suppose for a given eyewitness that $k \in [n-1]$ foils are not detected. We assume that the target is never detected as a foil. Then the \textit{effective lineup size} is $x=k+1$. Let $s(x)$ be the probability that the effective lineup size is $x$. Then
 
+$$s(x) = \binom{n-1}{x-1}(1-f)^{x-1}f^{n-x}.$$
 
-f <- seq(0, 1, by=0.01)
+## Rank probability
 
-pr <- function(n,f,x){
-  for i in (1:n)
-  y[i] <- sum(choose(n-1,x-1)*(1-f)^(x-1)*f^(n-x)/x)
+Suppose that the target is not detected as a target and the  effective lineup size is $x$ items. Then the target has an equal probability of being assigned a rank from 1 to $x$. Let $p(r)$ be the probability that the target is assigned rank $r \in [n]$, given it is not detected. Then 
+
+\begin {equation} \label {eq:eq1}
+p(r)=\sum^{n}_{x=r}\frac{s(x)}{x}.
+\end {equation}
+
+The function $p(r)$:
+```{r}
+b <- function(r, n, f){
+  for (i in r:n)
+    x[i] <- choose(n-1, i-1)*(1-f)^(i-1)*f^(n-i)/i
+  return(sum(x, na.rm = TRUE))
 }
 
-
-
-
-#c <- function(n,f,x,p_x){
-#  p_x/1-
-#}
+p <- function(n, f){
+  for (i in 1:n)
+    x[i] <- b(i, n, f)
+  return(x)
+}
 
 ```
 
-## Including Plots
 
-You can also embed plots, for example:
 
-```{r pressure, echo=FALSE}
-r <- pr(n,.5,x); r
+We assume that if the target is detected it is assigned rank 1. Let $q(r)$ be the probability that a target is assigned rank $r \in [n]$. Then
+
+\begin {equation}\label {eq:eq2}
+q(r):\left\{
+   \begin {aligned}
+   t+(1-t)p(r)&,\; r=1  \\
+   (1-t)p(r)&, \; r>1\\
+   \end {aligned}
+   \right.
+\end {equation}
+
+
+
+# Conditional Ranking Probabilities
+
+Let $Q(r)$ be the cumulative sum,
+\begin {equation} \label {eq:eq3}
+Q(r) = \sum^{r}_{i=1}q(i).
+\end {equation}
+
+Let $c(r)$ be the conditional probability that the target is assigned rank $r$ given that it has not been assigned any rank less than $r$. Then
+
+\begin {equation}\label {eq:eq4}
+c(r):\left\{
+   \begin {aligned}
+   q(r)&,\; r=1  \\
+   \frac{q(r)}{(1-Q(r-1))}&, \; r>1\\
+   \end {aligned}
+   \right.
+\end {equation}
+
+# Theorem
+
+We want to show that $c(2)<c(3)$. Suppose $c(2)<c(3)$. I thought I would try a brute force approach (although unsuccessfully). From Equations \eqref{eq:eq3} and \eqref{eq:eq4},
+$$\frac{q(2)}{1-q(1)}<\frac{q(3)}{1-q(1)-q(2)}$$
+\noindent From Equation \eqref{eq:eq4},
+$$\frac{(1-t)p(2)}{1-t-(1-t)p(1)}<\frac{(1-t)q(3)}{1-t-(1-t)p(1)-(1-t)p(2)}$$
+\noindent For $t<1$,
+$$\frac{p(2)}{1-p(1)}<\frac{p(3)}{1-p(1)-p(2)}$$
+
+If the theorem is true, then $c(2)/c(3)$ is $<1$ for all values of $n$ and $f$.
+
+## Demonstration of theorem
+
+The function $c(2)/c(3)$:
+```{r}
+c2c3ratio <- function(n, f){
+  x <- p(n,f)
+  x[n+1] <- (x[2]/(1-x[1]))/(x[3]/(1-x[1]-x[2]))
+  return(x[n+1])
+}
+
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+Draw the function $c(2)/c(3)$ for $n=8$:
+
+```{r}
+#Set the value of n
+n <- 8
+
+# Create a vector of values of f
+s <- seq(0,.99999, by=.001) 
+
+# The function calculating c(2)/c(3) for each value in vector s
+Ratio <- function(n){
+  for (i in 1:length(s)) 
+    x[i] <- c2c3ratio(n,s[i])
+  return(x)
+}
+
+# Create a vector of c(2)/c(3) ratios for all values of f where n = n
+v <- Ratio(n)
+
+# Draw the function for n = n
+v <- as.data.frame(v)
+ggplot(v,aes(s,v)) + 
+  geom_line()+
+  labs(subtitle="Ratio of conditional second to conditional third choices for all values of f", 
+       x="f", 
+       y="Ratio"
+       ) +
+  theme_bw()
+
+```
+
+
+Determine the minimum value of $c(2)/c(3)$ and identify the value of $f$ where this occurs:
+
+```{r}
+optimise(f=c2c3ratio, c(0,1), maximum = FALSE, n=n)
+```
+
+
+
+```{r}
+n3 <- Ratio(3)
+n4 <- Ratio(4)
+n8 <- Ratio(8)
+n10 <- Ratio(10)
+n20 <- Ratio(20)
+n50 <- Ratio(50)
+n100 <- Ratio(100)
+n250 <- Ratio(250)
+```
+
+```{r}
+n3 <- as.data.frame(cbind(n3,s))
+n4 <- as.data.frame(cbind(n4,s))
+n8 <- as.data.frame(cbind(n8,s))
+n10 <- as.data.frame(cbind(n10,s))
+n20 <- as.data.frame(cbind(n20,s))
+n50 <- as.data.frame(cbind(n50,s))
+n100 <- as.data.frame(cbind(n100,s))
+n250 <- as.data.frame(cbind(n250,s))
+
+```
+
+```{r}
+ggplot()+
+  #geom_line(data = n3, aes(y=n3, x=s))+
+  geom_line(data = n4, aes(y=n4, x=s))+
+  geom_line(data = n5, aes(y=n5, x=s))+
+  geom_line(data = n6, aes(y=n6, x=s))+
+  geom_line(data = n7, aes(y=n7, x=s))+
+  geom_line(data = n8, aes(y=n8, x=s))+
+  geom_line(data = n10, aes(y=n10, x=s))+
+  geom_line(data = n20, aes(y=n20, x=s))+
+  geom_line(data = n50, aes(y=n50, x=s))+
+  geom_line(data = n100, aes(y=n100, x=s))+
+  geom_line(data = n250, aes(y=n250, x=s))+
+  labs(subtitle="Ratio of conditional second to conditional third choices for all values of f",        x="f",        y="Ratio"       ) +
+  theme_bw()
+
+
+
+```
+```{r}
+test <- c(3,4,10,20,50,100,200,300,400,500,1000)
+ratio <- c(n_3,n_4,n_10,n_20,n_50,n_100,n_200,n_300,n_400,n_500,n_1000)
+data <- data.frame()
+for (i in 1:length(test)){
+  c <- data.frame(f = s, ratio = ratio, n=test[i])
+  data <- rbind(data,c)
+}
+```
+
