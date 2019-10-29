@@ -3,8 +3,8 @@ title: "Analysis of Eyewitness ranking data: Experiment 2"
 author: "Kym McCormick"
 date: "15 May 2019"
 output:
-  word_document: default
   pdf_document: default
+  word_document: default
   html_notebook: default
 ---
 ```{r setup, include=FALSE, results='hide'}
@@ -17,6 +17,7 @@ library("psych")
 library("tidyverse")
 library("MPTinR")
 library("readr")
+library("knitr")
 
 getwd()
 
@@ -76,19 +77,23 @@ din_e2 <- din_e2 %>% select(-date)
 ##Demographics                       
 ```{r demographics, echo=FALSE}
 
-describe(din_e2$demographics_age)
+age <- describe(din_e2$demographics_age)
+kable(age)
 
-demo <- din_e2 %>% 
+gender <- din_e2 %>% 
   select(demographics_gender) %>% 
   map(~prop.table(table(.)))
-demo
+
+kable(gender)
+
+
 ```
 
 ##Counts of correct identifications within each rank position
 ###Across different levels of memory
-```{r, ranking counts by memory}
+```{r, ranking counts by memory, echo=FALSE}
 ## Create a vector of rank counts ---
-Rank_dvector <- din_e2 %>% 
+Rank_memory <- din_e2 %>% 
   
 ## Only include target present lineup data ---  
   filter(target == "P") %>%
@@ -105,29 +110,19 @@ Rank_dvector <- din_e2 %>%
             r6 = sum(R6_Corr),
             r7 = sum(R7_Corr),
             r8 = sum(R8_Corr)
-            ) %>% 
-  ungroup()%>%
-select(-memory) %>%
-
-## Return as a structured vector  
-  ## Return as a structured vector  
-  as.matrix() %>% 
-  as.vector %>%
-  structure(.Dim= c(3L,8L))
-```
-```{r, echo=FALSE}
-Rank_dvector
+            ) 
 
 ```
-###Collapsed
-```{r, overall ranking counts}
-## Create a vector of rank counts ---
-Rank_dvector_collapsed <- din_e2 %>% 
+
+###Total counts
+```{r, ranking counts total, echo=FALSE}
+## Create a vector of overall rank counts ---
+Rank_collapsed <- din_e2 %>% 
   
-## Only include target present lineup data ---  
+  # Only include target present lineup data ---  
   filter(target == "P") %>%
   
-## Sum the correct selection of the target across each rank postion ---  
+  # Sum the correct selection of the target across each rank postion ---  
   summarise(r1 = sum(R1_Corr),
             r2 = sum(R2_Corr),
             r3 = sum(R3_Corr),
@@ -136,23 +131,28 @@ Rank_dvector_collapsed <- din_e2 %>%
             r6 = sum(R6_Corr),
             r7 = sum(R7_Corr),
             r8 = sum(R8_Corr)
-            ) %>% 
+            )
+## Add new 'Total' level for memory 
+Rank_collapsed$memory <- "Total"
 
-## Return as a structured vector  
+## Bind together
+Rank <- rbind(Rank_memory,Rank_collapsed)
+kable(Rank)
+
+## Return as a structured vector for use in the stat test and fitting function 
+Rank_dvector <- Rank %>%
+  ungroup() %>%
+  select(-memory) %>%
   as.matrix() %>% 
   as.vector %>%
-  structure(.Dim= c(1L,8L))
+  structure(.Dim= c(4L,8L))
 
-## Bind the resulting vector to Rank_dvector
-Rank_dvector <- rbind(Rank_dvector,Rank_dvector_collapsed)
 ```
 
-```{r, echo=FALSE}
-Rank_dvector
-```
+
 
 ##Proportional correct 
-```{r}
+```{r, proportional correct, echo=FALSE}
 Rank_prop <- din_e2  %>%
   filter(target == "P")%>%
   group_by(memory) %>%
@@ -165,17 +165,13 @@ Rank_prop <- din_e2  %>%
             Rank_7 = sum(R7_Corr)/sum(n),
             Rank_8 = sum(R8_Corr)/sum(n),
             n = n()
-            )
-  Rank_prop
+            )%>%
+  ungroup()%>%
+  select(-n)
 ```
 
-```{r, echo=FALSE}
-  matplot(t(Rank_prop[,2:7]), type = "p", bty="l", pch=c(19,17), ylab = "Proportion Correct", xlab = "Rank position", ylim = 0:1)
-  legend("topleft", legend = c("Strong memory","Weak memory", "Very weak memory"),pch =c(19,17), col = c("black","red", "green"), inset = .05)
-  box("plot")
-```
 ##Conditional rank probabilities
-```{r}
+```{r, conditional rank probabilities, echo=FALSE}
 ## Create a vector of conditional rank probabilities ---
 Cond_Cum_R <- din_e2 %>% 
   
@@ -184,7 +180,6 @@ Cond_Cum_R <- din_e2 %>%
   
 ## Separate into levels of memory strength (High and Low) ---  
   group_by(memory)%>%
-  print()%>%
 ## Sum the correct selection of the target across each rank postion ---  
   summarise(r1 = sum(R1_Corr),
             r2 = sum(R2_Corr),
@@ -196,8 +191,7 @@ Cond_Cum_R <- din_e2 %>%
             r8 = sum(R8_Corr),
             n = r1+r2+r3+r4+r5+r6+r7+r8
             ) %>% 
-  print()%>%
-  
+
 ## Calcluate conditional rank probabilities ---
   mutate(c1 = r1/n,
          c2 = r2/(n-r1),
@@ -207,29 +201,28 @@ Cond_Cum_R <- din_e2 %>%
          c6 = r6/(n-r1-r2-r3-r4-r5),
          c7 = r7/(n-r1-r2-r3-r4-r5-r6),
          c8 = r8/(r8)
-         ) 
-Cond_Cum_R
+         ) %>%
+  select(-r1,-r2,-r3,-r4,-r5,-r6,-r7,-r8,-n)
+kable(Cond_Cum_R)
 
 ## Create a structured vector
 Cond_Cum_RV <- Cond_Cum_R %>%
-  select(-memory,-n) %>%
+  ungroup()%>%
+  select(-memory) %>%
   as.matrix() %>%
   as.vector() %>%
-  structure(.Dim = c(3L,16L))
+  structure(.Dim = c(3L,8L))
 
-Cond_Cum_RV <- Cond_Cum_RV[,9:16]
-Cond_Cum_RV
-```
-```{r}
-Strong <- as.data.frame(t(Cond_Cum_R[1,11:18]))
+## Transform into dataframe for ggplot2
+Strong <- as.data.frame(t(Cond_Cum_R[1,2:9]))
 Strong$Rank <- c(1:8)
 Strong$Memory <- c(rep("Strong",2))
 
-Weak <- as.data.frame(t(Cond_Cum_R[3,11:18]))
+Weak <- as.data.frame(t(Cond_Cum_R[3,2:9]))
 Weak$Rank <- c(1:8)
 Weak$Memory <- c(rep("Weak",2))
 
-VeryWeak <- as.data.frame(t(Cond_Cum_R[2,11:18]))
+VeryWeak <- as.data.frame(t(Cond_Cum_R[2,2:9]))
 VeryWeak$Rank <- c(1:8)
 VeryWeak$Memory <- c(rep("VeryWeak",2))
 
@@ -239,10 +232,9 @@ ci <- ci %>%
   rename(ci = V1)
 ```
 
-```{r}
+```{r, cumulative accuracy s-w, echo=FALSE}
 ciSVW <- ci %>%
   filter(Memory != "VeryWeak")
-ciSVW
 
 ciPlot1 <- ggplot(ciSVW,aes(x = Rank, y = ci))+
   geom_line(aes(linetype = Memory)) +
@@ -252,12 +244,10 @@ ciPlot1 <- ggplot(ciSVW,aes(x = Rank, y = ci))+
   theme(legend.position="bottom")+
   scale_x_continuous(breaks = scales::pretty_breaks(n = 8)) + 
   scale_y_continuous(breaks = scales::pretty_breaks(n = 10))
-ciPlot1
 ```
-```{r}
+```{r, cumulative accuracy s-vw, echo=FALSE}
 ciSW <- ci %>%
   filter(Memory != "Weak")
-ciSW
 
 ciPlot2 <- ggplot(ciSW,aes(x = Rank, y = ci))+
   geom_line(aes(linetype = Memory)) +
@@ -267,13 +257,11 @@ ciPlot2 <- ggplot(ciSW,aes(x = Rank, y = ci))+
   theme(legend.position="bottom") +
   scale_x_continuous(breaks = scales::pretty_breaks(n = 6)) + 
   scale_y_continuous(breaks = scales::pretty_breaks(n = 10))
-ciPlot2
 ```
 
-```{r}
+```{r, cumulative accuracy s-w and s-vw, echo=FALSE}
 ciWVW <- ci %>%
   filter(Memory != "Strong")
-ciWVW
 ciS <- ci %>%
   filter(Memory == "Strong")%>%
   rename(Strong = Memory)
@@ -294,30 +282,24 @@ ciPlot_e2 <- ggplot(ciWVW,aes(x = Rank, y = ci))+
         strip.text.x = element_text(size=12),
         strip.background = element_rect(colour="black", fill=("0"))
         ) +
-
   scale_x_continuous(breaks = scales::pretty_breaks(n = 6)) + 
   scale_y_continuous(breaks = scales::pretty_breaks(n = 10))+
   facet_grid(.~Memory, labeller=labeller(Memory = labels))+ 
   theme(aspect.ratio = 1)
 
+
+
+
 ciPlot_e2
 
-svg("C:/GitHub projects/PhD-Thesis/c2 test/Output/ciPlot_e2.svg")
-print(ciPlot_e2)       # Plot 1 --> in the first page of PDF
-#print(myplot2)     # Plot 2 ---> in the second page of the PDF
-dev.off() 
-
-pdf("C:/GitHub projects/PhD-Thesis/c2 test/Output/ciPlot_e2.pdf")
-print(ciPlot_e2)       # Plot 1 --> in the first page of PDF
-#print(myplot2)     # Plot 2 ---> in the second page of the PDF
-dev.off() 
 ```
 
 
 
+##Cumulative accuracy memory-choice interaction
 
-Setting up ranking to look at between choosers and non-choosers
-```{r}
+```{r, cumulative accuracy memory-choice interaction, echo=FALSE}
+##Setting up ranking to look at between choosers and non-choosers
 Choosing <- din_e2 %>%
   select(memory, expectation, target, R1_Corr, R2_Corr, R3_Corr, R4_Corr, R5_Corr, R6_Corr, R7_Corr, R8_Corr, Choice)%>%
   mutate(choose = if_else(Choice != "Silhouette", 1, 0))
@@ -351,7 +333,6 @@ Choosing <- Choosing %>%
          c7 = r7/(n-r1-r2-r3-r4-r5-r6),
          c8 = r8/(r8)
          ) 
-Choosing
 
 ## Create a dataframe from above for use in ggplot
 StrongChoose <- as.data.frame(t(Choosing[4,12:19]))
@@ -388,7 +369,6 @@ ciChoose <- rbind(StrongChoose,StrongNoChoose,WeakChoose,WeakNoChoose,VeryWeakCh
 
 ciChoose <- ciChoose %>%
   rename(ci = V1)
-ciChoose
 
 ## Create a structured vector
 Choosing <- Choosing %>%
@@ -399,12 +379,11 @@ Choosing <- Choosing %>%
   structure(.Dim = c(6L,16L))
 
 Choosing <- Choosing[,9:16]
-Choosing
 
 
 ```
-Plot by choosers and memory
-```{r}
+###Plot by choosers and memory
+```{r, echo=FALSE}
 labels <- c(Strong = "Normal","Very Weak" = "Degraded encoding", Weak = "Interference")
 
 ciChoosePlot_e2 <- ggplot(ciChoose,aes(x = Rank, y = ci))+
@@ -429,19 +408,13 @@ ciChoosePlot_e2 <- ggplot(ciChoose,aes(x = Rank, y = ci))+
 
 ciChoosePlot_e2
 
-svg("C:/GitHub projects/PhD-Thesis/c2 test/Output/ciChoosePlot_e2.svg")
-print(ciChoosePlot_e2)       # Plot 1 --> in the first page of PDF
-dev.off() 
 
-pdf("C:/GitHub projects/PhD-Thesis/c2 test/Output/ciChoosePlot_e2.pdf")
-print(ciChoosePlot_e2)       # Plot 1 --> in the first page of PDF
-dev.off() 
 
 ```
 
 
 
-##Estimation of UV-SDT parameters
+#Estimation of UV-SDT parameters
 
 Model
 ```{r, Model}
@@ -485,10 +458,8 @@ Rank_strong <- fit.mptinr(
   starting.values = c(1)
 )
 
-Rank_strong$goodness.of.fit
 rank.strong.para <- Rank_strong$parameters%>%
   select(estimates)
-rank.strong.para
 ```
 
 Weak memory
@@ -504,10 +475,8 @@ Rank_weak <- fit.mptinr(
   starting.values = c(1,1)
 )
 
-Rank_weak$goodness.of.fit
 rank.weak.para <- Rank_weak$parameters%>%
   select(estimates)
-rank.weak.para
 ```
 Very Weak memory
 ```{r, echo=FALSE}
@@ -522,9 +491,8 @@ Rank_Very_weak <- fit.mptinr(
   starting.values = c(1,1)
 )
 
-Rank_Very_weak$goodness.of.fit
 rank.very.weak.para <- Rank_Very_weak$parameters
-#%>%   select(estimates)
+%>%   select(estimates)
 
 rank.very.weak.para
 ```
@@ -542,17 +510,22 @@ Rank_comb <- fit.mptinr(
   starting.values = c(1,1)
 )
 
-Rank_comb$goodness.of.fit
 rank.comb.para <- Rank_comb$parameters%>%
   select(estimates)
 
 ```
-```{r}
+```{r, echo=FALSE}
 rank.para <- cbind(rank.weak.para,rank.comb.para,rank.strong.para)
 colnames(rank.para) <- c("weak", "combined", "strong")
-rank.para
 ```
 
-```{r}
-
+```{r, echo=FALSE}
+svg("C:/GitHub projects/PhD-Thesis/c2 test/Output/ciPlot_e2.svg")
+print(ciPlot_e2) 
+svg("C:/GitHub projects/PhD-Thesis/c2 test/Output/ciChoosePlot_e2.svg")
+print(ciChoosePlot_e2)       # Plot 1 --> in the first page of PDF
+dev.off() 
+ 
 ```
+
+
