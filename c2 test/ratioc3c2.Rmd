@@ -1,6 +1,6 @@
 ---
-title: "Untitled"
-author: "Kym McCormick"
+title: "Wells' partial memory model"
+author: "Kym McCormick and John Dunn"
 date: "28/10/2019"
 output: pdf_document
 ---
@@ -22,7 +22,7 @@ Suppose for a given eyewitness that $k \in [n-1]$ foils are not detected. We ass
 
 $$s(x) = \binom{n-1}{x-1}(1-f)^{x-1}f^{n-x}.$$
 
-## Rank probability
+
 
 Suppose that the target is not detected as a target and the  effective lineup size is $x$ items. Then the target has an equal probability of being assigned a rank from 1 to $x$. Let $p(r)$ be the probability that the target is assigned rank $r \in [n]$, given it is not detected. Then 
 

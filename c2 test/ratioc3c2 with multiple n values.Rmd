@@ -99,16 +99,6 @@ c2c3ratio <- function(n, f){
   x[n+1] <- (x[2]/(1-x[1]))/(x[3]/(1-x[1]-x[2]))
   return(x[n+1])
 }
-
-```
-
-
-Draw the function $c(2)/c(3)$ for $n=8$:
-
-```{r}
-#Set the value of n
-n <- 8
-
 # Create a vector of values of f
 s <- seq(0,.99999, by=.001) 
 
@@ -119,44 +109,33 @@ Ratio <- function(n){
   return(x)
 }
 
-# Create a vector of c(2)/c(3) ratios for all values of f where n = n
-v <- Ratio(n)
-
-# Draw the function for n = n
-v <- as.data.frame(v)
-ggplot(v,aes(s,v)) + 
-  geom_line()+
-  labs(subtitle="Ratio of conditional second to conditional third choices for all values of f", 
-       x="f", 
-       y="Ratio"
-       ) +
-  theme_bw()
 
 ```
 
 
-Determine the minimum value of $c(2)/c(3)$ and identify the value of $f$ where this occurs:
+Draw the function $c(2)/c(3)$ for $n \in \{4,5,6,7,8,10,20,50,100,250\}$:
+
+
+
+
+
+
 
 ```{r}
-optimise(f=c2c3ratio, c(0,1), maximum = FALSE, n=n)
-```
-
-
-
-```{r}
-n3 <- Ratio(3)
 n4 <- Ratio(4)
+n5 <- Ratio(5)
+n6 <- Ratio(6)
+n7 <- Ratio(7)
 n8 <- Ratio(8)
 n10 <- Ratio(10)
 n20 <- Ratio(20)
 n50 <- Ratio(50)
 n100 <- Ratio(100)
 n250 <- Ratio(250)
-```
-
-```{r}
-n3 <- as.data.frame(cbind(n3,s))
 n4 <- as.data.frame(cbind(n4,s))
+n5 <- as.data.frame(cbind(n5,s))
+n6 <- as.data.frame(cbind(n6,s))
+n7 <- as.data.frame(cbind(n7,s))
 n8 <- as.data.frame(cbind(n8,s))
 n10 <- as.data.frame(cbind(n10,s))
 n20 <- as.data.frame(cbind(n20,s))
@@ -164,11 +143,7 @@ n50 <- as.data.frame(cbind(n50,s))
 n100 <- as.data.frame(cbind(n100,s))
 n250 <- as.data.frame(cbind(n250,s))
 
-```
-
-```{r}
 ggplot()+
-  #geom_line(data = n3, aes(y=n3, x=s))+
   geom_line(data = n4, aes(y=n4, x=s))+
   geom_line(data = n5, aes(y=n5, x=s))+
   geom_line(data = n6, aes(y=n6, x=s))+
@@ -184,14 +159,5 @@ ggplot()+
 
 
 
-```
-```{r}
-test <- c(3,4,10,20,50,100,200,300,400,500,1000)
-ratio <- c(n_3,n_4,n_10,n_20,n_50,n_100,n_200,n_300,n_400,n_500,n_1000)
-data <- data.frame()
-for (i in 1:length(test)){
-  c <- data.frame(f = s, ratio = ratio, n=test[i])
-  data <- rbind(data,c)
-}
 ```
 
