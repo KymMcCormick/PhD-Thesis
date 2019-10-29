@@ -14,7 +14,7 @@ library(ggplot2)
 x <- vector()
 ```
 
-# Ranking Probabilities
+# Ranking Probabilities: Wells partial memory model
 
 For an $n$-item lineup consisting of one target and $n-1$ foils, let $t$ be the probability that the eyewitness will detect the target (as the target) and let $f$ be the probability that they will detect a foil (as a foil). Let $[n]=\{1,\ldots,n\}$.
 
@@ -94,6 +94,7 @@ If the theorem is true, then $c(2)/c(3)$ is $<1$ for all values of $n$ and $f$.
 
 The function $c(2)/c(3)$:
 ```{r}
+
 c2c3ratio <- function(n, f){
   x <- p(n,f)
   x[n+1] <- (x[2]/(1-x[1]))/(x[3]/(1-x[1]-x[2]))
@@ -102,36 +103,78 @@ c2c3ratio <- function(n, f){
 
 ```
 
+# Ranking probability: Thurstone's rank orker model
+
+
+```{r}
+expSDTrank <- function(Q,n){
+  e <- vector("numeric", n)
+  mu <- Q[1]
+ # ss <- Q[2]
+  G <- function(x,i) {
+    (pnorm(x)^(n-i))*dnorm(x, mean = mu, sd = 1)*(1-pnorm(x))^(i-1)*choose(n-1, i-1)
+    }
+    
+  for (ii in 1:n) {
+    e[ii] <- integrate(G,-Inf,Inf,i = ii, rel.tol = .Machine$double.eps^0.5)$value
+    }
+  return(e)
+}
+
+SDTc2c3ratio <- function(Q,n){
+  x <- expSDTrank(Q,n)
+  x[n+1] <- (x[2]/(1-x[1]))/(x[3]/(1-x[1]-x[2]))
+  return(x[n+1])
+}
+
+
+SDTc2c3ratio(.5 ,8)
+```
 
 Draw the function $c(2)/c(3)$ for $n=8$:
 
 ```{r}
 #Set the value of n
 n <- 8
-
-# Create a vector of values of f
+Q <- 1
+# Create a vector of values of f and d'
 s <- seq(0,.99999, by=.001) 
+dprime <- seq(0,4, by=.01)
 
 # The function calculating c(2)/c(3) for each value in vector s
-Ratio <- function(n){
+RatioWPM <- function(n){
   for (i in 1:length(s)) 
     x[i] <- c2c3ratio(n,s[i])
   return(x)
 }
 
+# The function calculating c(2)/c(3) for each value in vector dprime
+RatioSDT <- function(n){
+  for (i in 1:length(dprime)) 
+    x[i] <- SDTc2c3ratio(dprime[i],n)
+  return(x)
+}
+
 # Create a vector of c(2)/c(3) ratios for all values of f where n = n
-v <- Ratio(n)
+WPM <- RatioWPM(n)
+WPM <- as.data.frame(WPM)
+WPM$f <- s
+
+# Create a vector of c(2)/c(3) ratios for all values of f where n = n
+SDT <- RatioSDT(n)
+SDT <- as.data.frame(SDT)
+SDT$"d'" <- dprime
 
 # Draw the function for n = n
-v <- as.data.frame(v)
-ggplot(v,aes(s,v)) + 
-  geom_line()+
+plot = ggplot() + 
+  geom_line(data=WPM, aes(x=s,y=WPM))+
+  #geom_line(data=SDT,aes(x=dprime,y=SDT))+
   labs(subtitle="Ratio of conditional second to conditional third choices for all values of f", 
        x="f", 
        y="Ratio"
        ) +
   theme_bw()
-
+plot
 ```
 
 
@@ -139,6 +182,26 @@ Determine the minimum value of $c(2)/c(3)$ and identify the value of $f$ where t
 
 ```{r}
 optimise(f=c2c3ratio, c(0,1), maximum = FALSE, n=n)
+#optimise(SDTc2c3ratio, c(0,4), maximum = TRUE, n=n)
 ```
 
+```{r}
+h <- 10000
+foil <- runif(h)
+k <- floor(runif(h, min = 3, max = 11))
+t <- runif(h)
+MC <- vector()
+
+ for (i in 1:length(k)) {
+    MC[i] <- c2c3ratio(k[i],foil[i])
+}
+
+MC <- as.data.frame(MC)
+MC$n <- k
+MC$f <- foil
+
+ggplot(MC,aes(x=f, y=MC))+
+  geom_point()+
+  theme_bw()
+```
 
