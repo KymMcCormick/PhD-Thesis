@@ -1,0 +1,73 @@
+---
+title: "SDT c2/c3 ratio"
+author: "Kym McCormick"
+date: "30/10/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+
+```{r cars}
+```{r}
+expSDTrank <- function(Q,n){
+  e <- vector("numeric", n)
+  mu <- Q[1]
+ # ss <- Q[2]
+  G <- function(x,i) {
+    (pnorm(x)^(n-i))*dnorm(x, mean = mu, sd = 1)*(1-pnorm(x))^(i-1)*choose(n-1, i-1)
+    }
+    
+  for (ii in 1:n) {
+    e[ii] <- integrate(G,-Inf,Inf,i = ii, rel.tol = .Machine$double.eps^0.5)$value
+    }
+  return(e)
+}
+
+SDTc2c3ratio <- function(Q,n){
+  x <- expSDTrank(Q,n)
+  x[n+1] <- (x[2]/(1-x[1]))/(x[3]/(1-x[1]-x[2]))
+  return(x[n+1])
+}
+
+
+SDTc2c3ratio(.5 ,8)
+```
+
+
+
+```{r}
+#Set the value of n
+n <- 8
+Q <- 1
+# Create a vector of values of f and d'
+dprime <- seq(0,4, by=.01)
+
+
+# The function calculating c(2)/c(3) for each value in vector dprime
+RatioSDT <- function(n){
+  for (i in 1:length(dprime)) 
+    x[i] <- SDTc2c3ratio(dprime[i],n)
+  return(x)
+}
+
+# Create a vector of c(2)/c(3) ratios for all values of d' where n = n
+SDT <- RatioSDT(n)
+SDT <- as.data.frame(SDT)
+SDT$"d'" <- dprime
+
+# Draw the function for n = n
+plot = ggplot() + 
+  geom_line(data=SDT,aes(x=dprime,y=SDT))+
+  labs(subtitle="Ratio of conditional second to conditional third choices for all values of f", 
+       x="f", 
+       y="Ratio"
+       ) +
+  theme_bw()
+plot
+```
+

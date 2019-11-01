@@ -42,7 +42,7 @@ din_e2 <- data_e2 %>%
 
 ## separate the condition variable into separate columns ---
   separate(condition,c("memory","expectation", "target")) %>%
-  filter(target == "P")%>%
+  #filter(target == "P")%>%
   
 ## separate the ranking variable into separate columns ---
   separate(Rank_T1_selectionOrder,c("Rank_1","Rank_2","Rank_3","Rank_4","Rank_5","Rank_6", "Rank_7", "Rank_8"))%>%
@@ -76,8 +76,14 @@ din_e2 <- din_e2 %>% select(-date)
 
 ##Demographics                       
 ```{r demographics, echo=FALSE}
+age <- din_e2%>%
+  select(demographics_age,
+         memory)%>%
+    filter(memory != "VW")
 
-age <- describe(din_e2$demographics_age)
+age <- describe(age$demographics_age)
+
+
 kable(age)
 
 gender <- din_e2 %>% 
@@ -86,6 +92,14 @@ gender <- din_e2 %>%
 
 kable(gender)
 
+exp2 <- din_e2 %>% 
+  select(memory,
+         target,
+         expectation) %>%
+  filter(memory != "VW")%>%
+  map(~prop.table(table(.)))
+
+kable(exp2)
 
 ```
 

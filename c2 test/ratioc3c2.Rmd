@@ -38,12 +38,11 @@ b <- function(r, n, f){
   return(sum(x, na.rm = TRUE))
 }
 
-p <- function(n, f){
+p <- function(t,n, f){
   for (i in 1:n)
     x[i] <- b(i, n, f)
   return(x)
 }
-
 ```
 
 
@@ -59,6 +58,19 @@ q(r):\left\{
    \right.
 \end {equation}
 
+The function $q(r)$:
+
+```{r}
+qr <- function(t,n,f){
+  x[1] <- t + (1-t)*(b(1, n, f))
+  for (i in 2:n){
+    x[i] <- b(i, n, f)*(1-t)
+  }
+      return(x)
+}
+
+
+```
 
 
 # Conditional Ranking Probabilities
@@ -67,6 +79,8 @@ Let $Q(r)$ be the cumulative sum,
 \begin {equation} \label {eq:eq3}
 Q(r) = \sum^{r}_{i=1}q(i).
 \end {equation}
+
+
 
 Let $c(r)$ be the conditional probability that the target is assigned rank $r$ given that it has not been assigned any rank less than $r$. Then
 
@@ -78,6 +92,7 @@ c(r):\left\{
    \end {aligned}
    \right.
 \end {equation}
+
 
 # Theorem
 
@@ -95,8 +110,8 @@ If the theorem is true, then $c(2)/c(3)$ is $<1$ for all values of $n$ and $f$.
 The function $c(2)/c(3)$:
 ```{r}
 
-c2c3ratio <- function(n, f){
-  x <- p(n,f)
+c2c3ratio <- function(t,n, f){
+  x <- qr(t,n,f)
   x[n+1] <- (x[2]/(1-x[1]))/(x[3]/(1-x[1]-x[2]))
   return(x[n+1])
 }
@@ -106,52 +121,19 @@ c2c3ratio <- function(n, f){
 # Ranking probability: Thurstone's rank orker model
 
 
-```{r}
-expSDTrank <- function(Q,n){
-  e <- vector("numeric", n)
-  mu <- Q[1]
- # ss <- Q[2]
-  G <- function(x,i) {
-    (pnorm(x)^(n-i))*dnorm(x, mean = mu, sd = 1)*(1-pnorm(x))^(i-1)*choose(n-1, i-1)
-    }
-    
-  for (ii in 1:n) {
-    e[ii] <- integrate(G,-Inf,Inf,i = ii, rel.tol = .Machine$double.eps^0.5)$value
-    }
-  return(e)
-}
-
-SDTc2c3ratio <- function(Q,n){
-  x <- expSDTrank(Q,n)
-  x[n+1] <- (x[2]/(1-x[1]))/(x[3]/(1-x[1]-x[2]))
-  return(x[n+1])
-}
-
-
-SDTc2c3ratio(.5 ,8)
-```
 
 Draw the function $c(2)/c(3)$ for $n=8$:
 
-```{r}
+```{r, echo=FALSE}
 #Set the value of n
 n <- 8
-Q <- 1
 # Create a vector of values of f and d'
 s <- seq(0,.99999, by=.001) 
-dprime <- seq(0,4, by=.01)
 
 # The function calculating c(2)/c(3) for each value in vector s
 RatioWPM <- function(n){
   for (i in 1:length(s)) 
-    x[i] <- c2c3ratio(n,s[i])
-  return(x)
-}
-
-# The function calculating c(2)/c(3) for each value in vector dprime
-RatioSDT <- function(n){
-  for (i in 1:length(dprime)) 
-    x[i] <- SDTc2c3ratio(dprime[i],n)
+    x[i] <- c2c3ratio(0,n,s[i])
   return(x)
 }
 
@@ -160,48 +142,69 @@ WPM <- RatioWPM(n)
 WPM <- as.data.frame(WPM)
 WPM$f <- s
 
-# Create a vector of c(2)/c(3) ratios for all values of f where n = n
-SDT <- RatioSDT(n)
-SDT <- as.data.frame(SDT)
-SDT$"d'" <- dprime
-
 # Draw the function for n = n
 plot = ggplot() + 
   geom_line(data=WPM, aes(x=s,y=WPM))+
-  #geom_line(data=SDT,aes(x=dprime,y=SDT))+
-  labs(subtitle="Ratio of conditional second to conditional third choices for all values of f", 
-       x="f", 
-       y="Ratio"
+  labs(title="Ratio of conditional second to conditional third choices for n = 8", 
+       x="f-value", 
+       y="c(2) / c(3)"
        ) +
   theme_bw()
 plot
 ```
 
 
-Determine the minimum value of $c(2)/c(3)$ and identify the value of $f$ where this occurs:
 
 ```{r}
-optimise(f=c2c3ratio, c(0,1), maximum = FALSE, n=n)
-#optimise(SDTc2c3ratio, c(0,4), maximum = TRUE, n=n)
+minimum <- optimise(f=c2c3ratio, c(0,1), maximum = FALSE, n=n, t=0)
 ```
+The minimum value of $c(2)/c(3)$ for $n=8$ is `r minimum$objective`, which occurs at $f=$ `r minimum$minimum`
+
+## Monte Carlo analysis of $c(2)/c(3)$ for $n \in \{3,...,10\}$, all values of $t$ and $f$.
 
 ```{r}
+# Set number of interations required
 h <- 10000
+
+# Create vectors of uniformly random values for each variable
 foil <- runif(h)
-k <- floor(runif(h, min = 3, max = 11))
-t <- runif(h)
+lineup_size <- floor(runif(h, min = 3, max = 11))
+target <- runif(h, min =0, max = 1)
+
+# Create an empty vector for the Monte Carlo generated numbers
 MC <- vector()
 
- for (i in 1:length(k)) {
-    MC[i] <- c2c3ratio(k[i],foil[i])
+# Run the Monte Carlo simulation
+
+ for (i in 1:length(lineup_size)) {
+    MC[i] <- c2c3ratio(target[i],lineup_size[i],foil[i])
 }
 
+# Build data frame of simulaiton values for ggplot
 MC <- as.data.frame(MC)
-MC$n <- k
+MC$n <- lineup_size
 MC$f <- foil
+MC$t <- target
 
-ggplot(MC,aes(x=f, y=MC))+
-  geom_point()+
+# Plot simulation values by values of t
+ggplot(MC,aes(x=t, y=MC))+
+  geom_point(aes(color=f))+
+  labs(title="Ratio of conditional second to conditional third choices for 3 < n < 10", 
+       subtitle = "by rate of target detection",
+       x="t-value", 
+       y="c(2) / c(3)"
+       ) +
   theme_bw()
+
+# Plot simulation values by values of f
+ggplot(MC,aes(x=f, y=MC))+
+  geom_point(aes(color=t))+
+  labs(title="Ratio of conditional second to conditional third choices for 3 < n < 10", 
+        subtitle = "by rate of foil detection",
+       x="f-value", 
+       y="c(2) / c(3)"
+       ) +
+  theme_bw()
+
 ```
 
