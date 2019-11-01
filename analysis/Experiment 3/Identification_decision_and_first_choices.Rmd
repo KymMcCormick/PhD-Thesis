@@ -1,0 +1,133 @@
+---
+title: "Eyewitness identification data analysis"
+author: "Kym McCormick"
+date: "15 May 2019"
+output:
+  word_document: default
+---
+```{r setup, include=FALSE, results='hide'}
+
+knitr::opts_chunk$set(echo = TRUE)
+library("psych")
+library("tidyverse")
+library("MPTinR")
+library("readr")
+
+#setwd("C:/Users/mccormick/Documents/GitHub/PhD-Thesis") #notebook computer
+setwd("C:/Users/User/Documents/Kym/PhD-Thesis") #Home desktop
+
+data <- read_csv("data/Experiment 3/RawDataAugust2019 (2).csv")
+```
+
+```{r data wrangling}
+# Define lineup size and number of confidence level bins required
+n <- 8 #lineup size
+cbins <- 5
+
+# Extract required data from raw dataset
+din <- data %>%
+  # Select required variables ---
+  select(uid,
+         date,
+         condition, 
+         date,
+         Rank_T1_lineupOrder,
+         Rank_T1_selectionOrder,
+         Test_T1_suspectIdentified, 
+         confidence_rating, 
+         justification_justification,
+         demographics_age, 
+         demographics_gender, 
+         demographics_country)%>%
+
+# Only include data from USA and includes a confidence rating ----
+  filter(demographics_country == "USA", !is.na(confidence_rating)) %>%
+
+## separate the condition variable into separate columns ---
+  separate(condition,c("memory","expectation", "target")) %>%
+  filter(target == "P")%>%
+
+  
+## separate the ranking variable into separate columns ---
+  separate(Rank_T1_selectionOrder,c("Rank_1","Rank_2","Rank_3","Rank_4","Rank_5","Rank_6", "Rank_7", "Rank_8"))%>%
+
+drop_na() %>%
+
+## Create columns recording accuracy for each rank
+  mutate(R1_Corr = if_else(Rank_1 == "F68", 1,0),
+         R2_Corr = if_else(Rank_2 == "F68", 1,0),
+         R3_Corr = if_else(Rank_3 == "F68", 1,0),
+         R4_Corr = if_else(Rank_4 == "F68", 1,0),
+         R5_Corr = if_else(Rank_5 == "F68", 1,0),
+         R6_Corr = if_else(Rank_6 == "F68", 1,0),
+         R7_Corr = if_else(Rank_7 == "F68", 1,0),
+         R8_Corr = if_else(Rank_8 == "F68", 1,0)
+         )
+  
+##Create a column of counts
+din$n <- if_else(!is.na(din$demographics_country) == "USA", 1,0) 
+  
+## Convert date to correct format
+din$date <- as.Date(din$date, "%Y-%m-%d")
+
+
+    ## Convert memory condition to the correct level 
+din$memory <- ifelse(din$date == "2019-08-07", "VW", din$memory)
+
+```
+
+Create a table containing ID and first rank decision only
+```{r}
+Decision <- din %>%
+  select(
+    memory,
+    expectation,
+    target,
+    Rank_1,
+    Test_T1_suspectIdentified
+  )
+
+Same <- vector()
+for (i in 1:2029)
+  if(Decision[i,5]=="F68" & Decision[i,4]=="F68"){
+    Same[i] <- "correct/correct"
+    } else {
+      if(Decision[i,5]=="Silhouette" & Decision[i,4]!="F68"){
+        Same[i] <- "Reject/False"
+      } else {
+        if(Decision[i,5]=="Silhouette" & Decision[i,4]=="F68"){
+          Same[i] <- "Reject/Correct"
+        } else {
+          if(Decision[i,5]!="F68" & Decision[i,4]=="F68"){
+          Same[i] <- "Better"
+          } else {
+            if(Decision[i,5]=="F68" & Decision[i,4]!="F68"){
+            Same[i] <- "Worse"
+            }else {
+                  Same[i] <- "False/False"
+              }
+            }
+        }
+      }
+  }
+
+
+Decision$same <- Same
+```
+
+
+
+```{r Identification outcome counts}
+Outcomes <- Decision%>%
+  select(same) %>% 
+  map(~prop.table(table(.)))
+
+```
+
+
+```{r}
+Outcomes
+Outcomes$same*2029
+
+```
+
